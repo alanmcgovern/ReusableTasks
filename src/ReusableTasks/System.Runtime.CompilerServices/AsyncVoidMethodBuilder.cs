@@ -32,30 +32,58 @@
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Not intended to be used directly.
+    /// A reimplementation of the built-in AsyncVoidMethodBuilder which is backed by
+    /// <see cref="ReusableTasks.ReusableTask"/> instead of <see cref="System.Threading.Tasks.Task"/>.
     /// </summary>
     public struct AsyncVoidMethodBuilder
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public static AsyncVoidMethodBuilder Create () => new AsyncVoidMethodBuilder ();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
         public void SetException (Exception e)
         {
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void SetResult ()
         {
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="stateMachine"></param>
         public void SetStateMachine (IAsyncStateMachine stateMachine)
         {
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="stateMachine"></param>
         public void Start<TStateMachine> (ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
             stateMachine.MoveNext ();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
@@ -64,6 +92,13 @@ namespace System.Runtime.CompilerServices
                 .AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine

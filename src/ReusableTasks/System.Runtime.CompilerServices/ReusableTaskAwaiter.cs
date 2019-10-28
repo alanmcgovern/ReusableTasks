@@ -38,13 +38,23 @@ namespace System.Runtime.CompilerServices
     {
         ReusableTaskMethodBuilder Builder { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public bool IsCompleted => Builder.Task.IsCompleted;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="builder"></param>
         internal ReusableTaskAwaiter (ReusableTaskMethodBuilder builder)
         {
             Builder = builder;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void GetResult()
         {
             var exception = Builder.Task.Result.Exception;
@@ -54,6 +64,10 @@ namespace System.Runtime.CompilerServices
                 ExceptionDispatchInfo.Capture (exception).Throw ();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="continuation"></param>
         public void OnCompleted (Action continuation)
             => Builder.Task.Result.Continuation = continuation;
     }

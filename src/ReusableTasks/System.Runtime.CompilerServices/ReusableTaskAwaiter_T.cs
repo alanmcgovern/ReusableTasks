@@ -38,13 +38,24 @@ namespace System.Runtime.CompilerServices
     {
         ReusableTaskMethodBuilder<T> Builder { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public bool IsCompleted => Builder.Task.IsCompleted;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="builder"></param>
         internal ReusableTaskAwaiter (ReusableTaskMethodBuilder<T> builder)
         {
             Builder = builder;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public T GetResult()
         {
             var result = Builder.Task.Result.Value;
@@ -56,6 +67,10 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="continuation"></param>
         public void OnCompleted(Action continuation)
             => Builder.Task.Result.Continuation = continuation;
     }

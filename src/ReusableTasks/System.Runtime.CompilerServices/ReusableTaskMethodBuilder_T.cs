@@ -1,5 +1,4 @@
-﻿#pragma warning disable RECS0108 // Warns about static fields in generic types
-//
+﻿//
 // ReusableTaskMethodBuilder_T.cs
 //
 // Authors:
@@ -27,6 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+
+#pragma warning disable RECS0108 // Warns about static fields in generic types
 
 using System.Collections.Generic;
 using System.Threading;
@@ -94,26 +95,52 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// True if this instance can be added back into the cache when the <see cref="Task"/>
+        /// is completed and has been awaited.
+        /// </summary>
         bool Cacheable { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public ReusableTask<T> Task { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cacheable"></param>
         ReusableTaskMethodBuilder (bool cacheable)
         {
             Cacheable = cacheable;
             Task = new ReusableTask<T> (this);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
         public void SetException(Exception e)
         {
             Task.Result.Exception = e;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="result"></param>
         public void SetResult(T result)
         {
             Task.Result.Value = result;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
@@ -123,6 +150,13 @@ namespace System.Runtime.CompilerServices
                 .AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
@@ -132,12 +166,21 @@ namespace System.Runtime.CompilerServices
                 .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="stateMachine"></param>
         public void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
             Task.Result.SyncContext = SynchronizationContext.Current;
             stateMachine.MoveNext ();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="stateMachine"></param>
         public void SetStateMachine (IAsyncStateMachine stateMachine)
         {
         }

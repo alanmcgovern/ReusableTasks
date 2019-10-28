@@ -35,8 +35,15 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage (AttributeTargets.Class)]
     public sealed class AsyncMethodBuilderAttribute : Attribute
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public Type BuilderType { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
         public AsyncMethodBuilderAttribute (Type type)
             => BuilderType = type;
     }

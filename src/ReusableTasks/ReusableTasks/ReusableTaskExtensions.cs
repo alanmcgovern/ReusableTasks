@@ -31,6 +31,9 @@ using System.Threading.Tasks;
 
 namespace ReusableTasks
 {
+    /// <summary>
+    /// Helper methods for <see cref="ReusableTask"/> and <see cref="ReusableTask{T}"/>.
+    /// </summary>
     public static class ReusableTaskExtensions
     {
         /// <summary>

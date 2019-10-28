@@ -94,22 +94,47 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// True if this instance can be added back into the cache when the <see cref="Task"/>
+        /// is completed and has been awaited.
+        /// </summary>
         bool Cacheable { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public ReusableTask Task { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cacheable"></param>
         ReusableTaskMethodBuilder (bool cacheable)
         {
             Cacheable = cacheable;
             Task = new ReusableTask (this);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
         public void SetException (Exception e)
             => Task.Result.Exception = e;
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void SetResult ()
             => Task.Result.Value = new EmptyStruct ();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
@@ -118,6 +143,13 @@ namespace System.Runtime.CompilerServices
                 .AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
@@ -126,6 +158,11 @@ namespace System.Runtime.CompilerServices
                 .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TStateMachine"></typeparam>
+        /// <param name="stateMachine"></param>
         public void Start<TStateMachine> (ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
@@ -133,6 +170,10 @@ namespace System.Runtime.CompilerServices
             stateMachine.MoveNext ();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="stateMachine"></param>
         public void SetStateMachine (IAsyncStateMachine stateMachine)
         {
         }
