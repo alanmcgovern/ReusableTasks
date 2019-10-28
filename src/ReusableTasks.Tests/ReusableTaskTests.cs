@@ -17,6 +17,7 @@ namespace ReusableTasks.Tests
         [SetUp]
         public void Setup ()
         {
+            TestSynchronizationContext.Instance.ResetCounts ();
             OriginalContext = SynchronizationContext.Current;
             ReusableTaskMethodBuilder.ClearCache ();
         }
@@ -27,26 +28,26 @@ namespace ReusableTasks.Tests
             SynchronizationContext.SetSynchronizationContext (OriginalContext);
         }
 
-		[Test]
-		public async Task AsTask ()
-		{
-			async ReusableTask Test ()
-			{
-				await Task.Delay (1);
-			}
+        [Test]
+        public async Task AsTask ()
+        {
+            async ReusableTask Test ()
+            {
+                await Task.Delay (1);
+            }
 
-			var task = Test ().AsTask ();
-			await task;
-			await task;
-			await task;
+            var task = Test ().AsTask ();
+            await task;
+            await task;
+            await task;
 
-			Assert.AreEqual (1, ReusableTaskMethodBuilder.CacheCount, "#4");
-		}
+            Assert.AreEqual (1, ReusableTaskMethodBuilder.CacheCount, "#4");
+        }
 
         [Test]
         public async Task Asynchronous_ConfigureAwaitFalse ()
         {
-            var context = new TestSynchronizationContext ();
+            var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
             async ReusableTask Test ()
@@ -62,7 +63,7 @@ namespace ReusableTasks.Tests
         [Test]
         public async Task Asynchronous_ConfigureAwaitTrue ()
         {
-            var context = new TestSynchronizationContext ();
+            var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
             async ReusableTask Test ()
@@ -73,7 +74,7 @@ namespace ReusableTasks.Tests
             }
 
             await Test ().ConfigureAwait (true);
-            Assert.AreEqual (3, context.Posted + context.Sent, "#1");
+            Assert.AreEqual (2, context.Posted + context.Sent, "#1");
         }
 
         [Test]

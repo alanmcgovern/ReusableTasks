@@ -17,6 +17,7 @@ namespace ReusableTasks.Tests
         [SetUp]
         public void Setup ()
         {
+            TestSynchronizationContext.Instance.ResetCounts ();
             OriginalContext = SynchronizationContext.Current;
             ReusableTaskMethodBuilder<int>.ClearCache ();
         }
@@ -27,27 +28,27 @@ namespace ReusableTasks.Tests
             SynchronizationContext.SetSynchronizationContext (OriginalContext);
         }
 
-		[Test]
-		public async Task AsTask ()
-		{
-			async ReusableTask<int> Test ()
-			{
-				await Task.Delay (1);
-				return 5;
-			}
+        [Test]
+        public async Task AsTask ()
+        {
+            async ReusableTask<int> Test ()
+            {
+                await Task.Delay (1);
+                return 5;
+            }
 
-			var task = Test ().AsTask ();
-			Assert.AreEqual (5, await task, "#1");
-			Assert.AreEqual (5, await task, "#2");
-			Assert.AreEqual (5, await task, "#3");
+            var task = Test ().AsTask ();
+            Assert.AreEqual (5, await task, "#1");
+            Assert.AreEqual (5, await task, "#2");
+            Assert.AreEqual (5, await task, "#3");
 
-			Assert.AreEqual (1, ReusableTaskMethodBuilder<int>.CacheCount, "#4");
-		}
+            Assert.AreEqual (1, ReusableTaskMethodBuilder<int>.CacheCount, "#4");
+        }
 
         [Test]
         public async Task Asynchronous_ConfigureAwaitFalse ()
         {
-            var context = new TestSynchronizationContext ();
+            var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
             async ReusableTask<int> Test ()
@@ -64,7 +65,7 @@ namespace ReusableTasks.Tests
         [Test]
         public async Task Asynchronous_ConfigureAwaitTrue ()
         {
-            var context = new TestSynchronizationContext ();
+            var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
             async ReusableTask<int> Test ()
@@ -75,7 +76,7 @@ namespace ReusableTasks.Tests
             }
 
             await Test ().ConfigureAwait (true);
-            Assert.AreEqual (3, context.Posted + context.Sent, "#1");
+            Assert.AreEqual (2, context.Posted + context.Sent, "#1");
         }
 
         [Test]
@@ -239,7 +240,6 @@ namespace ReusableTasks.Tests
             Assert.AreEqual (2, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
             await t3;
             Assert.AreEqual (3, ReusableTaskMethodBuilder<int>.CacheCount, "#3");
-
         }
 
         [Test]

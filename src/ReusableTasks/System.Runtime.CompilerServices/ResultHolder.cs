@@ -105,7 +105,11 @@ namespace System.Runtime.CompilerServices
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
             if (callback != null) {
-                if (SyncContext != null)
+                if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread)
+                    callback ();
+                else if (SyncContext != null && SynchronizationContext.Current == SyncContext)
+                    callback ();
+                else if (SyncContext != null)
                     SyncContext.Post (InvokeOnContext, callback);
                 else
                     ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
