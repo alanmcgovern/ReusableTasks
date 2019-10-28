@@ -1,0 +1,7 @@
+.DS_Store
+out/
+src/.vs
+/src/ReusableTasks.Tests/bin/
+/src/ReusableTasks.Tests/obj/
+src/ReusableTasks/bin/
+src/ReusableTasks/obj/

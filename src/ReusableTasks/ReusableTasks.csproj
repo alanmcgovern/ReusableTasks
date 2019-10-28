@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <GitVersionFile>version.txt</GitVersionFile>
+    <GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+    <GitIgnoreTagVersion>true</GitIgnoreTagVersion>
+    <GitCommitsRelativeTo>$([MSBuild]::GetDirectoryNameOfFileAbove ('$(MSBuildThisFileDirectory)', 'version.txt'))\</GitCommitsRelativeTo>
+
+    <ReusableTasksReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\alpha.txt')">-alpha</ReusableTasksReleaseSuffix>
+    <ReusableTasksReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\beta.txt')">-beta</ReusableTasksReleaseSuffix>
+
+    <BeforePack>$(BeforePack);SetPackProperties</BeforePack>
+    <PackDependsOn>$(PackDependsOn);CreatePlainZip</PackDependsOn>
+  </PropertyGroup>
+
+  <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' != 'true' Or '$(Configuration)' == 'Debug' ">
+    <PropertyGroup>
+      <Version>0.0.0.1</Version>
+      <AssemblyVersion>$(Version)</AssemblyVersion>
+      <FileVersion Condition="'$(FileVersion)' == ''">$(Version)</FileVersion>
+      <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)-Debug</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Restore success is in the .nuget.g.props file generated as part of msbuild /t:Restore. We do not -->
+  <!-- want this logic to run if restore hasn't been executed as the 'GitVersion' target won't exist.   -->
+  <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' == 'true' And '$(Configuration)' == 'Release' " DependsOnTargets="GitVersion">
+    <PropertyGroup>
+      <ReusableTasksFileVersion>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ReusableTasksFileVersion>
+      <ReusableTasksInformationalVersion>$(ReusableTasksFileVersion)-$(GitBranch)+$(GitCommit)</ReusableTasksInformationalVersion>
+
+      <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(ReusableTasksABIVersion)</AssemblyVersion>
+      <FileVersion Condition="'$(FileVersion)' == ''">$(ReusableTasksFileVersion)</FileVersion>
+      <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(ReusableTasksInformationalVersion)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
+  <!-- NuGet related properties. We need to run this as part of the 'PackDependsOn' dependencies
+      to ensure our GitInfo related properties have been calculated correctly. -->
+  <Target Name="SetPackProperties" DependsOnTargets="SetAssemblyVersion">
+    <PropertyGroup>
+      <Authors>Alan McGovern</Authors>
+      <PackageDescription>ReusableTasks is a (nearly) zero allocation Task-like object for use when declaring async methods.</PackageDescription>
+      <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+      <PackageProjectUrl>https://github.com/alanmcgovern/ReusableTasks</PackageProjectUrl>
+      <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+      <PackageVersion>$(ReusableTasksFileVersion)$(ReusableTasksReleaseSuffix)</PackageVersion>
+      <PackageTags>threading;async;task;tasks</PackageTags>
+
+      <IncludeSource>true</IncludeSource>
+      <IncludeSymbols>true</IncludeSymbols>
+      <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+      <RepositoryType>git</RepositoryType>
+      <RepositoryBranch>$(GitBranch)</RepositoryBranch>
+      <RepositoryCommit>$(GitSha)</RepositoryCommit>
+      <RepositoryUrl>https://github.com/alanmcgovern/ReusableTasks</RepositoryUrl>
+
+      <Copyright>Alan McGovern</Copyright>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CreatePlainZip" DependsOnTargets="SetAssemblyVersion" Inputs="$(TargetPath)" Outputs="$(PackageOutputPath)\ReusableTasks-$(ReusableTasksFileVersion).zip">
+    <ZipDirectory SourceDirectory="$(OutputPath)" DestinationFile="$(PackageOutputPath)\ReusableTasks-$(ReusableTasksFileVersion).zip" Overwrite="true" Condition="'$(PackageOutputPath)' != ''" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="GitInfo" Version="2.0.20" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\LICENSE.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>
