@@ -56,6 +56,7 @@ namespace ReusableTasks.Tests
                     }
                 }
             });
+            thread.IsBackground = true;
             thread.Start ();
         }
 
