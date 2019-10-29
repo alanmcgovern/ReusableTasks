@@ -32,6 +32,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ReusableTasks
 {
@@ -73,6 +74,14 @@ namespace ReusableTasks
             Awaiter = new ReusableTaskAwaiter (builder);
             Result = new ResultHolder<EmptyStruct> ();
         }
+
+        /// <summary>
+        /// Converts this <see cref="ReusableTask"/> into a standard
+        /// <see cref="System.Threading.Tasks.Task"/>
+        /// </summary>
+        /// <returns></returns>
+        public async Task AsTask ()
+            => await this;
 
         /// <summary>
         /// Configures the awaiter used by this <see cref="ReusableTask{T}"/>
