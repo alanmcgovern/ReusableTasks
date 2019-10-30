@@ -35,7 +35,7 @@ namespace System.Runtime.CompilerServices
     /// A reimplementation of the built-in AsyncVoidMethodBuilder which is backed by
     /// <see cref="ReusableTasks.ReusableTask"/> instead of <see cref="System.Threading.Tasks.Task"/>.
     /// </summary>
-    public struct AsyncVoidMethodBuilder
+    struct AsyncVoidMethodBuilder
     {
         /// <summary>
         /// 

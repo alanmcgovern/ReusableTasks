@@ -34,13 +34,21 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    class StateMachineCache<TStateMachine>
+    public class StateMachineCache<TStateMachine>
         where TStateMachine : IAsyncStateMachine
     {
 #pragma warning disable RECS0108 // Warns about static fields in generic types
         static readonly Stack<StateMachineCache<TStateMachine>> Cache = new Stack<StateMachineCache<TStateMachine>> ();
 #pragma warning restore RECS0108 // Warns about static fields in generic types
 
+        /// <summary>
+        /// Retrieves an instance of <see cref="StateMachineCache{TStateMachine}"/> from the cache. If the cache is
+        /// empty, a new instance will be created and returned. You must invoke either <see cref="AwaitOnCompleted{TAwaiter}(ref TAwaiter, ref TStateMachine)"/> or
+        /// <see cref="AwaitUnsafeOnCompleted{TAwaiter}(ref TAwaiter, ref TStateMachine)"/>. This will ensure the
+        /// <see cref="StateMachineCache{TStateMachine}"/> instance is added back into the cache as soon as the
+        /// async continuation has been executed.
+        /// </summary>
+        /// <returns></returns>
         public static StateMachineCache<TStateMachine> GetOrCreate ()
         {
             lock (Cache)
@@ -50,11 +58,17 @@ namespace System.Runtime.CompilerServices
         TStateMachine StateMachine;
         readonly Action OnCompletedAction;
 
-        public StateMachineCache ()
+        StateMachineCache ()
         {
             OnCompletedAction = OnCompleted;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitOnCompleted<TAwaiter> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
         {
@@ -62,6 +76,12 @@ namespace System.Runtime.CompilerServices
             awaiter.OnCompleted (OnCompletedAction);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TAwaiter"></typeparam>
+        /// <param name="awaiter"></param>
+        /// <param name="stateMachine"></param>
         public void AwaitUnsafeOnCompleted<TAwaiter> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
         {
