@@ -27,9 +27,6 @@
 //
 
 
-#pragma warning disable CS0436 // Type conflicts with imported type
-#pragma warning disable RECS0108 // Warns about static fields in generic types
-
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
