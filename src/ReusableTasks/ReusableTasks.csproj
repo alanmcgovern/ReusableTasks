@@ -15,7 +15,7 @@
     <ReusableTasksReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\beta.txt')">-beta</ReusableTasksReleaseSuffix>
 
     <BeforePack>$(BeforePack);SetPackProperties</BeforePack>
-    <PackDependsOn>$(PackDependsOn);CreatePlainZip</PackDependsOn>
+    <PackDependsOn>$(PackDependsOn)</PackDependsOn>
   </PropertyGroup>
 
   <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' != 'true' Or '$(Configuration)' == 'Debug' ">
@@ -63,10 +63,6 @@
 
       <Copyright>Alan McGovern</Copyright>
     </PropertyGroup>
-  </Target>
-
-  <Target Name="CreatePlainZip" DependsOnTargets="SetAssemblyVersion" Inputs="$(TargetPath)" Outputs="$(PackageOutputPath)\ReusableTasks-$(ReusableTasksFileVersion).zip">
-    <ZipDirectory SourceDirectory="$(OutputPath)" DestinationFile="$(PackageOutputPath)\ReusableTasks-$(ReusableTasksFileVersion).zip" Overwrite="true" Condition="'$(PackageOutputPath)' != ''" />
   </Target>
 
   <ItemGroup>
