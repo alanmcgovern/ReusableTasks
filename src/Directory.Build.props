@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 
 </Project>
