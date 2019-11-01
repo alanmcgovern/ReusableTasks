@@ -54,17 +54,15 @@ namespace ReusableTasks.Tests
         public async Task UseTwice ()
         {
             var tcs = new ReusableTaskCompletionSource<int> ();
-            var task = tcs.Task;
 
             tcs.SetResult (1);
             Assert.IsTrue (tcs.Task.IsCompleted, "#1");
-            Assert.AreEqual (1, await task, "#2");
+            Assert.AreEqual (1, await tcs.Task, "#2");
             Assert.IsFalse (tcs.Task.IsCompleted, "#3");
             Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#4");
 
             tcs.SetResult (2);
-            Assert.AreSame (task, tcs.Task, "#5");
-            Assert.AreEqual (2, await task, "#6");
+            Assert.AreEqual (2, await tcs.Task, "#6");
             Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#7");
         }
     }

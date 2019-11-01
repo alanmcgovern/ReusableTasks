@@ -39,9 +39,9 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public class ReusableTaskMethodBuilder<T>
+    public struct ReusableTaskMethodBuilder<T>
     {
-        static readonly Stack<ReusableTaskMethodBuilder<T>> Cache = new Stack<ReusableTaskMethodBuilder<T>> ();
+        static readonly Stack<ResultHolder<T>> Cache = new Stack<ResultHolder<T>> ();
 
         /// <summary>
         /// The number of <see cref="ReusableTaskMethodBuilder{T}"/> instances currently in the cache.
@@ -69,37 +69,25 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public static ReusableTaskMethodBuilder<T> Create ()
         {
-            lock (Cache)
-                return Cache.Count > 0 ? Cache.Pop () : new ReusableTaskMethodBuilder<T> (true);
+            lock (Cache) {
+				var resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+                return new ReusableTaskMethodBuilder<T> (new ReusableTask<T> (resultHolder));
+			}
         }
-
-        /// <summary>
-        /// Creates a <see cref="ReusableTask{T}"/> which will be reset after it has been completed and
-        /// awaited, but it will not be returned to the cache.
-        /// </summary>
-        /// <returns></returns>
-        internal static ReusableTaskMethodBuilder<T> CreateUncachedResettable ()
-            => new ReusableTaskMethodBuilder<T> (false);
 
         /// <summary>
         /// Places the instance into the cache for re-use. This is invoked implicitly when a <see cref="ReusableTask{T}"/> is awaited.
         /// </summary>
-        /// <param name="builder">The instance to place in the cache</param>
-        internal static void Release (ReusableTaskMethodBuilder<T> builder)
+        /// <param name="result">The instance to place in the cache</param>
+        internal static void Release (ResultHolder<T> result)
         {
-            builder.Task.Reset ();
-            if (builder.Cacheable) {
+            result.Reset ();
+            if (result.Cacheable) {
                 lock (Cache)
                     if (Cache.Count < MaximumCacheSize)
-                        Cache.Push (builder);
+                        Cache.Push (result);
             }
         }
-
-        /// <summary>
-        /// True if this instance can be added back into the cache when the <see cref="Task"/>
-        /// is completed and has been awaited.
-        /// </summary>
-        bool Cacheable { get; }
 
         /// <summary>
         /// 
@@ -109,11 +97,10 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="cacheable"></param>
-        ReusableTaskMethodBuilder (bool cacheable)
+        /// <param name="task"></param>
+        ReusableTaskMethodBuilder (ReusableTask<T> task)
         {
-            Cacheable = cacheable;
-            Task = new ReusableTask<T> (this);
+			Task = task;
         }
 
         /// <summary>

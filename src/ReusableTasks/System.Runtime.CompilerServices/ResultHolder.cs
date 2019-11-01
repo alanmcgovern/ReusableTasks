@@ -45,6 +45,18 @@ namespace System.Runtime.CompilerServices
         static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
 #pragma warning restore RECS0108 // Warns about static fields in generic types
 
+		int state;
+
+		public bool Cacheable {
+			get => (state & 1) == 1;
+			set {
+				if (value)
+					state |= 1;
+				else
+					state &= ~1;
+			}
+		}
+
         public Action Continuation {
             get => continuation;
             set {
@@ -71,7 +83,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public bool HasValue { get; private set; }
+        public bool HasValue {
+			get => (state & (1 << 1)) == 1 << 1;
+			set {
+				if (value)
+					state |= (1 << 1);
+				else
+					state &= ~(1 << 1);
+			}
+		}
 
         public SynchronizationContext SyncContext {
             get; set;
@@ -89,6 +109,11 @@ namespace System.Runtime.CompilerServices
                 TryInvoke (tmp);
             }
         }
+
+		public ResultHolder (bool cacheable)
+		{
+			Cacheable = cacheable;
+		}
 
         public void Reset ()
         {

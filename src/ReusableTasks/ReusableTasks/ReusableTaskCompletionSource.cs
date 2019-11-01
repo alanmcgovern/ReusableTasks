@@ -40,39 +40,39 @@ namespace ReusableTasks
     /// <typeparam name="T"></typeparam>
     public class ReusableTaskCompletionSource<T>
     {
-        ReusableTaskMethodBuilder<T> Builder { get; }
+		ResultHolder<T> Result { get; }
 
         /// <summary>
         /// The <see cref="ReusableTask{T}"/> controlled by this <see cref="ReusableTaskCompletionSource{T}"/>.
         /// Once the Task has been both completed and awaited it will be reset to it's initial state, allowing
         /// this <see cref="ReusableTaskCompletionSource{T}"/> instance to be reused.
         /// </summary>
-        public ReusableTask<T> Task => Builder.Task;
+        public ReusableTask<T> Task => new ReusableTask<T> (Result);
 
         /// <summary>
         /// Instantiates a new <see cref="ReusableTaskCompletionSource{T}"/>.
         /// </summary>
         public ReusableTaskCompletionSource ()
         {
-            Builder = ReusableTaskMethodBuilder<T>.CreateUncachedResettable ();
+            Result = new ResultHolder<T> (false);
         }
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Canceled state. 
         /// </summary>
         public void SetCanceled ()
-            => Builder.SetException (new TaskCanceledException ());
+            => Result.Exception = new TaskCanceledException ();
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Faulted state using the specified exception. 
         /// </summary>
         public void SetException (Exception ex)
-            => Builder.SetException (ex);
+            => Result.Exception = ex;
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Faulted state using the specified exception. 
         /// </summary>
         public void SetResult (T result)
-            => Builder.SetResult (result);
+            => Result.Value = result;
     }
 }

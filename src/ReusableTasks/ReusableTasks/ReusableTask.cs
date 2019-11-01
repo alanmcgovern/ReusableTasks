@@ -42,22 +42,13 @@ namespace ReusableTasks
     /// future behaviour will be indeterminate.
     /// </summary>
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder))]
-    public class ReusableTask
+    public struct ReusableTask
     {
         /// <summary>
         /// Gets an instance of <see cref="ReusableTask"/> which has already been completed. It is safe
         /// to await this instance multiple times.
         /// </summary>
-        public static ReusableTask CompletedTask = CreateCompletedTask ();
-
-        static ReusableTask CreateCompletedTask ()
-        {
-            var builder = ReusableTaskMethodBuilder.CreateUncachedUnresettable ();
-            builder.SetResult ();
-            return builder.Task;
-        }
-
-        ReusableTaskAwaiter Awaiter { get; }
+        public static ReusableTask CompletedTask = new ReusableTask (new ResultHolder<EmptyStruct> (false) { Value = new EmptyStruct () });
 
         /// <summary>
         /// Returns true if the task has completed.
@@ -66,10 +57,9 @@ namespace ReusableTasks
 
         internal ResultHolder<EmptyStruct> Result { get; }
 
-        internal ReusableTask (ReusableTaskMethodBuilder builder)
+        internal ReusableTask (ResultHolder<EmptyStruct> result)
         {
-            Awaiter = new ReusableTaskAwaiter (builder);
-            Result = new ResultHolder<EmptyStruct> ();
+            Result = result;
         }
 
         /// <summary>
@@ -101,7 +91,7 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         public ReusableTaskAwaiter GetAwaiter ()
-            => Awaiter;
+            => new ReusableTaskAwaiter (Result);
 
         internal void Reset ()
             => Result.Reset ();

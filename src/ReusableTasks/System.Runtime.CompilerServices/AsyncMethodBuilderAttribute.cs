@@ -27,12 +27,14 @@
 //
 
 
+#if !NETSTANDARD2_1
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    [AttributeUsage (AttributeTargets.Class)]
+    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct)]
     public sealed class AsyncMethodBuilderAttribute : Attribute
     {
         /// <summary>
@@ -48,3 +50,5 @@ namespace System.Runtime.CompilerServices
             => BuilderType = type;
     }
 }
+
+#endif

@@ -42,10 +42,8 @@ namespace ReusableTasks
     /// future behaviour will be indeterminate.
     /// </summary>
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
-    public class ReusableTask<T>
+    public struct ReusableTask<T>
     {
-        ReusableTaskAwaiter<T> Awaiter { get; }
-
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
@@ -53,10 +51,9 @@ namespace ReusableTasks
 
         internal ResultHolder<T> Result { get; }
 
-        internal ReusableTask (ReusableTaskMethodBuilder<T> builder)
+        internal ReusableTask (ResultHolder<T> result)
         {
-            Awaiter = new ReusableTaskAwaiter<T> (builder);
-            Result = new ResultHolder<T> ();
+            Result = result;
         }
 
         /// <summary>
@@ -88,7 +85,7 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         public ReusableTaskAwaiter<T> GetAwaiter()
-            => Awaiter;
+            => new ReusableTaskAwaiter<T> (Result);
 
         internal void Reset ()
             => Result.Reset ();

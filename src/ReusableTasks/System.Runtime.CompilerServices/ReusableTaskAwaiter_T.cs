@@ -34,22 +34,22 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public class ReusableTaskAwaiter<T> : INotifyCompletion
+    public struct ReusableTaskAwaiter<T> : INotifyCompletion
     {
-        ReusableTaskMethodBuilder<T> Builder { get; }
+		readonly ResultHolder<T> Result;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => Builder.Task.IsCompleted;
+        public bool IsCompleted => Result.HasValue;
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="builder"></param>
-        internal ReusableTaskAwaiter (ReusableTaskMethodBuilder<T> builder)
+        /// <param name="result"></param>
+        internal ReusableTaskAwaiter (ResultHolder<T> result)
         {
-            Builder = builder;
+            Result = result;
         }
 
         /// <summary>
@@ -58,9 +58,9 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public T GetResult()
         {
-            var result = Builder.Task.Result.Value;
-            var exception = Builder.Task.Result.Exception;
-            ReusableTaskMethodBuilder<T>.Release (Builder);
+            var result = Result.Value;
+            var exception = Result.Exception;
+            ReusableTaskMethodBuilder<T>.Release (Result);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();
@@ -72,6 +72,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="continuation"></param>
         public void OnCompleted(Action continuation)
-            => Builder.Task.Result.Continuation = continuation;
+            => Result.Continuation = continuation;
     }
 }
