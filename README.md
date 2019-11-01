@@ -6,24 +6,33 @@ A .NET Standard 2.0 compatible library which can be used to implement zero alloc
 
 Sample usage:
 ```
-
-async ReusableTask InitializeAsync ()
+public async ReusableTask InitializeAsync ()
 {
     if (!Initialized) {
-        await LongInitialization ();
+        await LongInitializationAsync ();
         Initialized = true;
     }
 }
 
-async ReusableTask<int> CreateCacheAsync ()
+async ReusableTask LongInitializationAsync ()
+{
+    // Contact a database, load from a file, etc
+}
+
+public async ReusableTask<Cache> CreateCacheAsync ()
 {
     if (!Initialized) {
-        cache = await LongInitialization ();
+        cache = await LongCacheCreationAsync ();
         Initialized = true;
     }
     return cache;
 }
 
+async ReusableTask<Cache> LongCacheCreationAsync ()
+{
+    // Contact a database, load from a file, etc..
+    return new Cache (....);
+}
 ```
 The compiler generated async state machine for these methods is allocation-free, and results in no garbage collectable objects being created no matter how many times the methods are invoked.
 
