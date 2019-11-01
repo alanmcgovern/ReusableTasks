@@ -27,6 +27,7 @@
 //
 
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +45,8 @@ namespace ReusableTasks
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
     public struct ReusableTask<T>
     {
+        int token;
+
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
@@ -53,6 +56,7 @@ namespace ReusableTasks
 
         internal ReusableTask (ResultHolder<T> result)
         {
+            token = 0;
             Result = result;
         }
 
@@ -85,7 +89,13 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         public ReusableTaskAwaiter<T> GetAwaiter()
-            => new ReusableTaskAwaiter<T> (Result);
+        {
+            if (token != 0)
+                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+            token = 1;
+
+            return new ReusableTaskAwaiter<T> (Result);
+        }
 
         internal void Reset ()
             => Result.Reset ();

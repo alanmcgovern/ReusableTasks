@@ -74,6 +74,47 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
+        public void Asynchronous_GetAwaiterTwice ()
+        {
+            async ReusableTask Test ()
+            {
+                await Task.Yield ();
+            }
+
+            var task = Test ();
+            task.GetAwaiter ();
+            Assert.Throws<InvalidOperationException> (() => task.GetAwaiter (), "#1");
+        }
+
+        [Test]
+        public void Asynchronous_AwaiterGetResultTwice ()
+        {
+            async ReusableTask Test ()
+            {
+                await Task.Yield ();
+            }
+
+            var task = Test ();
+            var awaiter = task.GetAwaiter ();
+            awaiter.GetResult ();
+            Assert.Throws<InvalidOperationException> (() => awaiter.GetResult (), "#1");
+        }
+
+        [Test]
+        public void Asynchronous_AwaiterOnCompletedTwice ()
+        {
+            async ReusableTask Test ()
+            {
+                await Task.Yield ();
+            }
+
+            var task = Test ();
+            var awaiter = task.GetAwaiter ();
+            awaiter.OnCompleted (() => { });
+            Assert.Throws<InvalidOperationException> (() => awaiter.OnCompleted (() => { }), "#1");
+        }
+
+        [Test]
         public async Task Asynchronous_ConfigureAwaitFalse ()
         {
             var context = TestSynchronizationContext.Instance;
