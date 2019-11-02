@@ -36,24 +36,26 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T>
     {
-        Action continuation;
-        Exception exception;
-        T result;
+        const int CacheableFlag = 1 << 0;
+        const int HasValueFlag = 1 << 1;
 
 #pragma warning disable RECS0108 // Warns about static fields in generic types
         static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
         static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
 #pragma warning restore RECS0108 // Warns about static fields in generic types
 
+        Action continuation;
+        Exception exception;
         int state;
+        T result;
 
         public bool Cacheable {
-            get => (state & 1) == 1;
+            get => (state & CacheableFlag) == CacheableFlag;
             set {
                 if (value)
-                    state |= 1;
+                    state |= CacheableFlag;
                 else
-                    state &= ~1;
+                    state &= ~CacheableFlag;
             }
         }
 
@@ -84,20 +86,18 @@ namespace System.Runtime.CompilerServices
         }
 
         public bool HasValue {
-            get => (state & (1 << 1)) == 1 << 1;
+            get => (state & HasValueFlag) == HasValueFlag;
             set {
                 if (value)
-                    state |= (1 << 1);
+                    state |= HasValueFlag;
                 else
-                    state &= ~(1 << 1);
+                    state &= ~HasValueFlag;
             }
         }
 
         public SynchronizationContext SyncContext {
             get; set;
         }
-
-        public int Token { get; set; }
 
         public T Value {
             get => result;
@@ -124,7 +124,6 @@ namespace System.Runtime.CompilerServices
             HasValue = false;
             result = default;
             SyncContext = null;
-            Token = 0;
         }
 
         void TryInvoke (Action callback)
