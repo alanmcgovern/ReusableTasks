@@ -67,7 +67,8 @@ namespace System.Runtime.CompilerServices
             token |= 2;
 
             var exception = Result.Exception;
-            ReusableTaskMethodBuilder.Release (Result);
+            if (Result.Cacheable)
+                ReusableTaskMethodBuilder.Release (Result);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();

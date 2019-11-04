@@ -68,13 +68,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <returns></returns>
         public static ReusableTaskMethodBuilder<T> Create ()
-        {
-            ResultHolder<T> resultHolder;
-            lock (Cache)
-                resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
-
-            return new ReusableTaskMethodBuilder<T> (resultHolder);
-        }
+            => new ReusableTaskMethodBuilder<T> ();
 
         /// <summary>
         /// Places the instance into the cache for re-use. This is invoked implicitly when a <see cref="ReusableTask{T}"/> is awaited.
@@ -91,19 +85,12 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public ReusableTask<T> Task { get; }
+        ReusableTask<T> task;
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="resultHolder"></param>
-        ReusableTaskMethodBuilder (ResultHolder<T> resultHolder)
-        {
-            Task = new ReusableTask<T> (resultHolder);
-        }
+        public ReusableTask<T> Task => task;
 
         /// <summary>
         /// 
@@ -111,7 +98,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="e"></param>
         public void SetException(Exception e)
         {
-            Task.Result.Exception = e;
+            if (task.ResultHolder == null)
+                 lock (Cache)
+                    task.ResultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+            task.ResultHolder.Exception = e;
         }
 
         /// <summary>
@@ -120,7 +110,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="result"></param>
         public void SetResult(T result)
         {
-            Task.Result.Value = result;
+            if (task.ResultHolder == null)
+                task = new ReusableTask<T> (result);
+            else
+                task.ResultHolder.Value = result;
         }
 
         /// <summary>
@@ -130,11 +123,16 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            if (task.ResultHolder == null) {
+                lock (Cache)
+                    task.ResultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+                task.ResultHolder.SyncContext = SynchronizationContext.Current;
+            }
+
             StateMachineCache<TStateMachine>.GetOrCreate ()
                 .AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
@@ -146,11 +144,16 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            if (task.ResultHolder == null) {
+                lock (Cache)
+                    task.ResultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+                task.ResultHolder.SyncContext = SynchronizationContext.Current;
+            }
+
             StateMachineCache<TStateMachine>.GetOrCreate ()
                 .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
@@ -162,7 +165,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine"></param>
         public void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
-            Task.Result.SyncContext = SynchronizationContext.Current;
             stateMachine.MoveNext ();
         }
 

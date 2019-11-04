@@ -251,6 +251,38 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
+        public async Task Synchronous_ConfigureAwaitFalse ()
+        {
+            var context = TestSynchronizationContext.Instance;
+            SynchronizationContext.SetSynchronizationContext (context);
+
+            async ReusableTask<int> Test ()
+            {
+                return 1;
+            }
+
+            await Test ().ConfigureAwait (false);
+            Assert.AreEqual (0, context.Posted + context.Sent, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
+        }
+
+        [Test]
+        public async Task Synchronous_ConfigureAwaitTrue ()
+        {
+            var context = TestSynchronizationContext.Instance;
+            SynchronizationContext.SetSynchronizationContext (context);
+
+            async ReusableTask<int> Test ()
+            {
+                return 1;
+            }
+
+            await Test ().ConfigureAwait (true);
+            Assert.AreEqual (0, context.Posted + context.Sent, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
+        }
+
+        [Test]
         public void Synchronous_Exception ()
         {
 #pragma warning disable CS1998 // Make local function 'static'
@@ -290,7 +322,7 @@ namespace ReusableTasks.Tests
 
             var task = Test ();
             await task;
-            Assert.IsFalse (task.IsCompleted, "#1");
+            Assert.IsTrue (task.IsCompleted, "#1");
         }
 
         [Test]
@@ -308,11 +340,11 @@ namespace ReusableTasks.Tests
             var t3 = Test ();
 
             await t1;
-            Assert.AreEqual (1, ReusableTaskMethodBuilder<int>.CacheCount, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#1");
             await t2;
-            Assert.AreEqual (2, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
             await t3;
-            Assert.AreEqual (3, ReusableTaskMethodBuilder<int>.CacheCount, "#3");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#3");
         }
 
         [Test]
@@ -328,7 +360,7 @@ namespace ReusableTasks.Tests
             await Test ();
             await Test ();
             await Test ();
-            Assert.AreEqual (1, ReusableTaskMethodBuilder<int>.CacheCount, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#1");
         }
     }
 }
