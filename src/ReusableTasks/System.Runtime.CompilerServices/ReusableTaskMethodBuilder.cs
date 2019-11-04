@@ -67,13 +67,12 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public static ReusableTaskMethodBuilder Create ()
         {
-            lock (Cache)
-			{
+            lock (Cache) {
                 var builder = new ReusableTaskMethodBuilder ();
-				lock (Cache)
-					builder.Task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
-				return builder;
-			}
+                lock (Cache)
+                    builder.Task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
+                return builder;
+            }
         }
 
         /// <summary>

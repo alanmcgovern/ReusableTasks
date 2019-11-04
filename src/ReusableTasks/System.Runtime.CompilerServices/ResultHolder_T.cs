@@ -31,18 +31,21 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    class ResultHolder
+    {
+        protected static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
+        protected static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
+
+        protected static Action HasValueSentinel = () => { throw new Exception ("HasValueSentinel - Should not be invoked."); };
+    }
+
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    class ResultHolder<T>
+    class ResultHolder<T> : ResultHolder
     {
         const int CacheableFlag = 1 << 0;
         const int HasValueFlag = 1 << 1;
-
-#pragma warning disable RECS0108 // Warns about static fields in generic types
-        static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
-        static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
-#pragma warning restore RECS0108 // Warns about static fields in generic types
 
         Action continuation;
         Exception exception;
@@ -62,38 +65,38 @@ namespace System.Runtime.CompilerServices
         public Action Continuation {
             get => continuation;
             set {
-                Action tmp = null;
-                lock (this) {
-                    continuation = value;
-                    if (HasValue)
-                        tmp = continuation;
+                // If 'continuation' is set to 'null' then we have not yet set a value. In this
+                // scenario we should place the compiler-supplied continuation in the field so
+                // that when a value is set we can directly invoke the continuation.
+                var action = Interlocked.CompareExchange(ref continuation, value, null);
+                if (action != null) {
+                    // A non-null action means that the 'HasValueSentinel' was set on the field.
+                    // This indicates a value has already been set, so we can execute the
+                    // compiler-supplied continuation immediately.
+                    TryInvoke (value);
                 }
-                TryInvoke (tmp);
             }
         }
 
         public Exception Exception {
             get => exception;
             set {
-                Action tmp = null;
-                lock (this) {
-                    exception = value;
-                    HasValue = true;
-                    tmp = continuation;
+                exception = value;
+                state |= HasValueFlag;
+
+                // If 'continuation' is set to 'null' then we have not yet set a continuation.
+                // In this scenario, set the continuation to a value signifying the result is now available.
+                var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
+                if (action != null) {
+                    // This means the value returned by the CompareExchange was the continuation passed by the
+                    // compiler, so we can directly execute it now that we have set a value.
+                    TryInvoke(action);
                 }
-                TryInvoke (tmp);
             }
         }
 
-        public bool HasValue {
-            get => (state & HasValueFlag) == HasValueFlag;
-            set {
-                if (value)
-                    state |= HasValueFlag;
-                else
-                    state &= ~HasValueFlag;
-            }
-        }
+        public bool HasValue
+            => (state & HasValueFlag) == HasValueFlag;
 
         public SynchronizationContext SyncContext {
             get; set;
@@ -102,13 +105,17 @@ namespace System.Runtime.CompilerServices
         public T Value {
             get => result;
             set {
-                Action tmp = null;
-                lock (this) {
-                    result = value;
-                    HasValue = true;
-                    tmp = continuation;
+                result = value;
+                state |= HasValueFlag;
+
+                // If 'continuation' is set to 'null' then we have not yet set a continuation.
+                // In this scenario, set the continuation to a value signifying the result is now available.
+                var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
+                if (action != null) {
+                    // This means the value returned by the CompareExchange was the continuation passed by the
+                    // compiler, so we can directly execute it now that we have set a value.
+                    TryInvoke(action);
                 }
-                TryInvoke (tmp);
             }
         }
 
@@ -121,7 +128,7 @@ namespace System.Runtime.CompilerServices
         {
             continuation = null;
             exception = null;
-            HasValue = false;
+            state &= ~HasValueFlag;
             result = default;
             SyncContext = null;
         }
@@ -131,16 +138,14 @@ namespace System.Runtime.CompilerServices
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (callback != null) {
-                if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread)
-                    callback ();
-                else if (SyncContext != null && SynchronizationContext.Current == SyncContext)
-                    callback ();
-                else if (SyncContext != null)
-                    SyncContext.Post (InvokeOnContext, callback);
-                else
-                    ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
-            }
+            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread)
+                callback ();
+            else if (SyncContext != null && SynchronizationContext.Current == SyncContext)
+                callback ();
+            else if (SyncContext != null)
+                SyncContext.Post (InvokeOnContext, callback);
+            else
+                ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
         }
     }
 }

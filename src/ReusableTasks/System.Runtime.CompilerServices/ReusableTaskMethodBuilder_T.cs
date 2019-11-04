@@ -70,9 +70,9 @@ namespace System.Runtime.CompilerServices
         public static ReusableTaskMethodBuilder<T> Create ()
         {
             lock (Cache) {
-				var resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+                var resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
                 return new ReusableTaskMethodBuilder<T> (new ReusableTask<T> (resultHolder));
-			}
+            }
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task"></param>
         ReusableTaskMethodBuilder (ReusableTask<T> task)
         {
-			Task = task;
+            Task = task;
         }
 
         /// <summary>

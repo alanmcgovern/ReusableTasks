@@ -40,7 +40,7 @@ namespace ReusableTasks
     /// <typeparam name="T"></typeparam>
     public class ReusableTaskCompletionSource<T>
     {
-		ResultHolder<T> Result { get; }
+        ResultHolder<T> Result { get; }
 
         /// <summary>
         /// The <see cref="ReusableTask{T}"/> controlled by this <see cref="ReusableTaskCompletionSource{T}"/>.
