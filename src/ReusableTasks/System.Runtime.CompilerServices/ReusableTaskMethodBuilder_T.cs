@@ -69,10 +69,11 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public static ReusableTaskMethodBuilder<T> Create ()
         {
-            lock (Cache) {
-                var resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
-                return new ReusableTaskMethodBuilder<T> (new ReusableTask<T> (resultHolder));
-            }
+            ResultHolder<T> resultHolder;
+            lock (Cache)
+                resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true);
+
+            return new ReusableTaskMethodBuilder<T> (resultHolder);
         }
 
         /// <summary>
@@ -81,6 +82,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="result">The instance to place in the cache</param>
         internal static void Release (ResultHolder<T> result)
         {
+            // This is always resettable, but sometimes cacheable.
             result.Reset ();
             if (result.Cacheable) {
                 lock (Cache)
@@ -97,10 +99,10 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="task"></param>
-        ReusableTaskMethodBuilder (ReusableTask<T> task)
+        /// <param name="resultHolder"></param>
+        ReusableTaskMethodBuilder (ResultHolder<T> resultHolder)
         {
-            Task = task;
+            Task = new ReusableTask<T> (resultHolder);
         }
 
         /// <summary>

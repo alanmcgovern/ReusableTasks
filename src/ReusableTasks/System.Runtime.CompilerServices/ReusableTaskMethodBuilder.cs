@@ -71,7 +71,7 @@ namespace System.Runtime.CompilerServices
             lock (Cache)
                 resultHolder = Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true);
 
-            return new ReusableTaskMethodBuilder { Task = new ReusableTask (resultHolder) };
+            return new ReusableTaskMethodBuilder (resultHolder);
         }
 
         /// <summary>
@@ -92,7 +92,16 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public ReusableTask Task { get; private set; }
+        public ReusableTask Task { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="resultHolder"></param>
+        ReusableTaskMethodBuilder (ResultHolder<EmptyStruct> resultHolder)
+        {
+            Task = new ReusableTask (resultHolder);
+        }
 
         /// <summary>
         /// 
