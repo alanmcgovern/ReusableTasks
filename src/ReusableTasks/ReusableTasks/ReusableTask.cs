@@ -45,8 +45,6 @@ namespace ReusableTasks
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder))]
     public struct ReusableTask
     {
-        int token;
-
         internal static ResultHolder<EmptyStruct> CompletedResult = new ResultHolder<EmptyStruct>(false) { Value = new EmptyStruct () };
 
         /// <summary>
@@ -55,17 +53,19 @@ namespace ReusableTasks
         /// </summary>
         public static ReusableTask CompletedTask => new ReusableTask (CompletedResult);
 
+        int token;
+
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
-        public bool IsCompleted => Result.HasValue;
+        public bool IsCompleted => ResultHolder.HasValue;
 
-        internal ResultHolder<EmptyStruct> Result { get; }
+        internal ResultHolder<EmptyStruct> ResultHolder;
 
-        internal ReusableTask (ResultHolder<EmptyStruct> result)
+        internal ReusableTask (ResultHolder<EmptyStruct> resultHolder)
         {
             token = 0;
-            Result = result;
+            ResultHolder = resultHolder;
         }
 
         /// <summary>
@@ -86,9 +86,9 @@ namespace ReusableTasks
         public ReusableTask ConfigureAwait (bool continueOnCapturedContext)
         {
             if (continueOnCapturedContext)
-                Result.SyncContext = SynchronizationContext.Current;
+                ResultHolder.SyncContext = SynchronizationContext.Current;
             else
-                Result.SyncContext = null;
+                ResultHolder.SyncContext = null;
             return this;
         }
 
@@ -102,10 +102,10 @@ namespace ReusableTasks
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
             token = 1;
 
-            return new ReusableTaskAwaiter (Result);
+            return new ReusableTaskAwaiter (ResultHolder);
         }
 
         internal void Reset ()
-            => Result.Reset ();
+            => ResultHolder.Reset ();
     }
 }

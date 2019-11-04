@@ -279,7 +279,7 @@ namespace ReusableTasks.Tests
 
             var task = Test ();
             await task;
-            Assert.IsFalse (task.IsCompleted, "#1");
+            Assert.IsTrue (task.IsCompleted, "#1");
         }
 
         [Test]
@@ -296,11 +296,11 @@ namespace ReusableTasks.Tests
             var t3 = Test ();
 
             await t1;
-            Assert.AreEqual (1, ReusableTaskMethodBuilder.CacheCount, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder.CacheCount, "#1");
             await t2;
-            Assert.AreEqual (2, ReusableTaskMethodBuilder.CacheCount, "#2");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder.CacheCount, "#2");
             await t3;
-            Assert.AreEqual (3, ReusableTaskMethodBuilder.CacheCount, "#3");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder.CacheCount, "#3");
 
         }
 
@@ -316,7 +316,7 @@ namespace ReusableTasks.Tests
             await Test ();
             await Test ();
             await Test ();
-            Assert.AreEqual (1, ReusableTaskMethodBuilder.CacheCount, "#1");
+            Assert.AreEqual (0, ReusableTaskMethodBuilder.CacheCount, "#1");
         }
     }
 }

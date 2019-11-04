@@ -98,9 +98,7 @@ namespace System.Runtime.CompilerServices
         public bool HasValue
             => (state & HasValueFlag) == HasValueFlag;
 
-        public SynchronizationContext SyncContext {
-            get; set;
-        }
+        public SynchronizationContext SyncContext;
 
         public T Value {
             get => result;

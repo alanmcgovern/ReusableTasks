@@ -45,19 +45,31 @@ namespace ReusableTasks
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
     public struct ReusableTask<T>
     {
+        internal static ResultHolder<T> SyncCompleted = new ResultHolder<T> (false) { Value = default };
+
         int token;
 
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
-        public bool IsCompleted => Result.HasValue;
+        public bool IsCompleted => ResultHolder == null ? false : ResultHolder.HasValue;
 
-        internal ResultHolder<T> Result { get; }
+        internal ResultHolder<T> ResultHolder;
 
-        internal ReusableTask (ResultHolder<T> result)
+        internal T Result;
+
+        internal ReusableTask (ResultHolder<T> resultHolder)
+        {
+            token = 0;
+            Result = default;
+            ResultHolder = resultHolder;
+        }
+
+        internal ReusableTask (T result)
         {
             token = 0;
             Result = result;
+            ResultHolder = SyncCompleted;
         }
 
         /// <summary>
@@ -78,9 +90,9 @@ namespace ReusableTasks
         public ReusableTask<T> ConfigureAwait(bool continueOnCapturedContext)
         {
             if (continueOnCapturedContext)
-                Result.SyncContext = SynchronizationContext.Current;
+                ResultHolder.SyncContext = SynchronizationContext.Current;
             else
-                Result.SyncContext = null;
+                ResultHolder.SyncContext = null;
             return this;
         }
 
@@ -94,10 +106,10 @@ namespace ReusableTasks
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
             token = 1;
 
-            return new ReusableTaskAwaiter<T> (Result);
+            return new ReusableTaskAwaiter<T> (this);
         }
 
         internal void Reset ()
-            => Result.Reset ();
+            => ResultHolder.Reset ();
     }
 }

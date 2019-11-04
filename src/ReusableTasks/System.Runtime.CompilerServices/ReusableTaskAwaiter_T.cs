@@ -28,6 +28,7 @@
 
 
 using System.Runtime.ExceptionServices;
+using ReusableTasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -38,21 +39,21 @@ namespace System.Runtime.CompilerServices
     {
         int token;
 
-        readonly ResultHolder<T> Result;
+        readonly ReusableTask<T> Task;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => Result.HasValue;
+        public bool IsCompleted => Task.IsCompleted;
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="result"></param>
-        internal ReusableTaskAwaiter (ResultHolder<T> result)
+        /// <param name="task"></param>
+        internal ReusableTaskAwaiter (ReusableTask<T> task)
         {
             token = 0;
-            Result = result;
+            Task = task;
         }
 
         /// <summary>
@@ -65,9 +66,10 @@ namespace System.Runtime.CompilerServices
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
             token |= 2;
 
-            var result = Result.Value;
-            var exception = Result.Exception;
-            ReusableTaskMethodBuilder<T>.Release (Result);
+            var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.Value;
+            var exception = Task.ResultHolder?.Exception;
+            if (Task.ResultHolder != ReusableTask<T>.SyncCompleted)
+                ReusableTaskMethodBuilder<T>.Release (Task.ResultHolder);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();
@@ -84,7 +86,7 @@ namespace System.Runtime.CompilerServices
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
             token |= 1;
 
-            Result.Continuation = continuation;
+            Task.ResultHolder.Continuation = continuation;
         }
     }
 }
