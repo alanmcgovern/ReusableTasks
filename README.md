@@ -1,6 +1,7 @@
 # ReusableTask
 
 [![NuGet version](https://badge.fury.io/nu/reusabletasks.svg)](https://badge.fury.io/nu/reusabletasks)
+[![Build status](https://dev.azure.com/alanmcgovern0144/ReusableTasks/_apis/build/status/ReusableTasks-CI)](https://dev.azure.com/alanmcgovern0144/ReusableTasks/_build/latest?definitionId=3)
 
 A .NET Standard 2.0 compatible library which can be used to implement zero allocation async/await. This is conceptually similar to `ValueTask<T>`, except it's compatible with .NET 2.0 and has zero ongoing allocations once the cache initializes.
 
