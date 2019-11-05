@@ -35,9 +35,9 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public struct ReusableTaskAwaiter<T> : INotifyCompletion
+    public readonly struct ReusableTaskAwaiter<T> : INotifyCompletion
     {
-        int token;
+        readonly int Id;
 
         readonly ReusableTask<T> Task;
 
@@ -49,10 +49,11 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="id"></param>
         /// <param name="task"></param>
-        internal ReusableTaskAwaiter (ReusableTask<T> task)
+        internal ReusableTaskAwaiter (int id, ReusableTask<T> task)
         {
-            token = 0;
+            Id = id;
             Task = task;
         }
 
@@ -62,9 +63,8 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public T GetResult()
         {
-            if ((token & 2) == 2)
+            if (Task.ResultHolder.Id != Id)
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-            token |= 2;
 
             var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.Value;
             var exception = Task.ResultHolder?.Exception;
@@ -82,9 +82,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation"></param>
         public void OnCompleted(Action continuation)
         {
-            if ((token & 1) == 1)
+            if (Task.ResultHolder.Id != Id)
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-            token |= 1;
 
             Task.ResultHolder.Continuation = continuation;
         }

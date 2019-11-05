@@ -32,7 +32,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    struct EmptyStruct
+    readonly struct EmptyStruct
     {
     }
 }

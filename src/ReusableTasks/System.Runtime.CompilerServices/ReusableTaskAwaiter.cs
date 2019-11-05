@@ -36,9 +36,9 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public struct ReusableTaskAwaiter : INotifyCompletion
+    public readonly struct ReusableTaskAwaiter : INotifyCompletion
     {
-        int token;
+        readonly int Id;
 
         /// <summary>
         /// 
@@ -50,10 +50,11 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="id"></param>
         /// <param name="resultHolder"></param>
-        internal ReusableTaskAwaiter (ResultHolder<EmptyStruct> resultHolder)
+        internal ReusableTaskAwaiter (int id, ResultHolder<EmptyStruct> resultHolder)
         {
-            token = 0;
+            Id = id;
             Result = resultHolder;
         }
 
@@ -62,9 +63,8 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public void GetResult()
         {
-            if ((token & 2) == 2)
+            if (Result.Id != Id)
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-            token |= 2;
 
             var exception = Result.Exception;
             if (Result.Cacheable)
@@ -80,9 +80,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation"></param>
         public void OnCompleted (Action continuation)
         {
-            if ((token & 1) == 1)
+            if (Result.Id != Id)
                 throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-            token |= 1;
 
             Result.Continuation = continuation;
         }

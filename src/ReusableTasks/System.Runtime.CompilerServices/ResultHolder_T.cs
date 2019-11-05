@@ -44,8 +44,9 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T> : ResultHolder
     {
-        const int CacheableFlag = 1 << 0;
-        const int HasValueFlag = 1 << 1;
+        const int CacheableFlag = 1 << 30;
+        const int HasValueFlag = 1 << 31;
+        const int IdMask = ~0 ^ (CacheableFlag | HasValueFlag);
 
         Action continuation;
         Exception exception;
@@ -68,12 +69,17 @@ namespace System.Runtime.CompilerServices
                 // If 'continuation' is set to 'null' then we have not yet set a value. In this
                 // scenario we should place the compiler-supplied continuation in the field so
                 // that when a value is set we can directly invoke the continuation.
+                var sentinel = HasValueSentinel;
                 var action = Interlocked.CompareExchange(ref continuation, value, null);
-                if (action != null) {
+                if (action == sentinel) {
                     // A non-null action means that the 'HasValueSentinel' was set on the field.
                     // This indicates a value has already been set, so we can execute the
                     // compiler-supplied continuation immediately.
+                    if (Interlocked.CompareExchange(ref continuation, value, sentinel) != sentinel)
+                        throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                     TryInvoke (value);
+                } else if (action != null) {
+                    throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                 }
             }
         }
@@ -97,6 +103,8 @@ namespace System.Runtime.CompilerServices
 
         public bool HasValue
             => (state & HasValueFlag) == HasValueFlag;
+
+        public int Id => state & IdMask;
 
         public SynchronizationContext SyncContext;
 
@@ -126,7 +134,11 @@ namespace System.Runtime.CompilerServices
         {
             continuation = null;
             exception = null;
-            state &= ~HasValueFlag;
+            if (Cacheable) {
+                state = ((state + 1) & IdMask) | CacheableFlag;
+            } else {
+                state = ((state + 1) & IdMask);
+            }
             result = default;
             SyncContext = null;
         }
