@@ -43,33 +43,34 @@ namespace ReusableTasks
     /// future behaviour will be indeterminate.
     /// </summary>
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
-    public struct ReusableTask<T>
+    public readonly struct ReusableTask<T>
     {
         internal static ResultHolder<T> SyncCompleted = new ResultHolder<T> (false) { Value = default };
-
-        int token;
 
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
         public bool IsCompleted => ResultHolder == null ? false : ResultHolder.HasValue;
 
-        internal ResultHolder<T> ResultHolder;
+        readonly int Id;
 
-        internal T Result;
+        internal readonly ResultHolder<T> ResultHolder;
+
+        internal readonly T Result;
+
 
         internal ReusableTask (ResultHolder<T> resultHolder)
         {
-            token = 0;
             Result = default;
             ResultHolder = resultHolder;
+            Id = ResultHolder.Id;
         }
 
         internal ReusableTask (T result)
         {
-            token = 0;
             Result = result;
             ResultHolder = SyncCompleted;
+            Id = ResultHolder.Id;
         }
 
         /// <summary>
@@ -101,13 +102,7 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         public ReusableTaskAwaiter<T> GetAwaiter()
-        {
-            if (token != 0)
-                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-            token = 1;
-
-            return new ReusableTaskAwaiter<T> (this);
-        }
+            => new ReusableTaskAwaiter<T> (Id, this);
 
         internal void Reset ()
             => ResultHolder.Reset ();

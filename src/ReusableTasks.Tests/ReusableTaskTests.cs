@@ -74,19 +74,6 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public void Asynchronous_GetAwaiterTwice ()
-        {
-            async ReusableTask Test ()
-            {
-                await Task.Yield ();
-            }
-
-            var task = Test ();
-            task.GetAwaiter ();
-            Assert.Throws<InvalidOperationException> (() => task.GetAwaiter (), "#1");
-        }
-
-        [Test]
         public void Asynchronous_AwaiterGetResultTwice ()
         {
             async ReusableTask Test ()

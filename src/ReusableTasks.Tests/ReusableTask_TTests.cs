@@ -75,20 +75,6 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public void Asynchronous_GetAwaiterTwice ()
-        {
-            async ReusableTask<int> Test ()
-            {
-                await Task.Yield ();
-                return 1;
-            }
-
-            var task = Test ();
-            task.GetAwaiter ();
-            Assert.Throws<InvalidOperationException> (() => task.GetAwaiter (), "#1");
-        }
-
-        [Test]
         public void Asynchronous_AwaiterGetResultTwice ()
         {
             async ReusableTask<int> Test ()
@@ -256,10 +242,12 @@ namespace ReusableTasks.Tests
             var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
             async ReusableTask<int> Test ()
             {
                 return 1;
             }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
             await Test ().ConfigureAwait (false);
             Assert.AreEqual (0, context.Posted + context.Sent, "#1");
@@ -272,10 +260,12 @@ namespace ReusableTasks.Tests
             var context = TestSynchronizationContext.Instance;
             SynchronizationContext.SetSynchronizationContext (context);
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
             async ReusableTask<int> Test ()
             {
                 return 1;
             }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
             await Test ().ConfigureAwait (true);
             Assert.AreEqual (0, context.Posted + context.Sent, "#1");
