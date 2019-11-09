@@ -105,14 +105,14 @@ namespace ReusableTasks.Tests
 
         async ReusableTask DelayMethodCapture ()
         {
-            await Task.Delay (100).ConfigureAwait (true);
+            await Task.Delay (1).ConfigureAwait (true);
             Assert.AreEqual (TestSynchronizationContext.Instance, SynchronizationContext.Current, "#1");
             Assert.IsFalse (Thread.CurrentThread.IsThreadPoolThread, "#2");
         }
 
         async ReusableTask DelayMethodDoNotCapture ()
         {
-            await Task.Delay (100).ConfigureAwait (false);
+            await Task.Delay (1).ConfigureAwait (false);
             Assert.AreEqual (null, SynchronizationContext.Current, "#1");
             Assert.IsTrue (Thread.CurrentThread.IsThreadPoolThread, "#2");
         }
