@@ -28,6 +28,7 @@
 
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using NUnit.Framework;
@@ -41,6 +42,38 @@ namespace ReusableTasks.Tests
         public void Setup ()
         {
             ReusableTaskMethodBuilder<int>.ClearCache ();
+        }
+
+        [Test]
+        public async Task DoNotForceAsyncWithSyncContext ()
+        {
+            await TestSynchronizationContext.Instance;
+            TestSynchronizationContext.Instance.ResetCounts ();
+
+            var tcs = new ReusableTaskCompletionSource<int> (false);
+            tcs.SetResult (1);
+
+            // If we are not forcing async, we do allow synchronous completion.
+            Assert.IsTrue (tcs.Task.IsCompleted, "#1");
+            await tcs.Task;
+
+            Assert.AreEqual (0, TestSynchronizationContext.Instance.Posted, "#2");
+        }
+
+        [Test]
+        public async Task ForceAsyncWithSyncContext ()
+        {
+            await TestSynchronizationContext.Instance;
+            TestSynchronizationContext.Instance.ResetCounts ();
+
+            var tcs = new ReusableTaskCompletionSource<int> (true);
+            tcs.SetResult (1);
+
+            // If we're forcing async, we have to explicitly disallow synchronous completion too.
+            Assert.IsFalse (tcs.Task.IsCompleted, "#1");
+            await tcs.Task;
+
+            Assert.AreEqual (1, TestSynchronizationContext.Instance.Posted, "#2");
         }
 
         [Test]

@@ -44,9 +44,17 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T> : ResultHolder
     {
-        const int CacheableFlag = 1 << 30;
+        const int CacheableFlag = 1 << 29;
+        const int ForceAsynchronousContinuationFlag = 1 << 30;
         const int HasValueFlag = 1 << 31;
-        const int IdMask = ~0 ^ (CacheableFlag | HasValueFlag);
+        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag);
+
+        internal static ResultHolder<T> CreateUncachedCompleted ()
+        {
+            var result = new ResultHolder<T> (false);
+            result.Value = default;
+            return result;
+        }
 
         Action continuation;
         Exception exception;
@@ -104,6 +112,16 @@ namespace System.Runtime.CompilerServices
         public bool HasValue
             => (state & HasValueFlag) == HasValueFlag;
 
+        public bool ForceAsynchronousContinuation {
+            get => (state & ForceAsynchronousContinuationFlag) == ForceAsynchronousContinuationFlag;
+            set {
+                if (value)
+                    state |= ForceAsynchronousContinuationFlag;
+                else
+                    state &= ~ForceAsynchronousContinuationFlag;
+            }
+        }
+
         public int Id => state & IdMask;
 
         public SynchronizationContext SyncContext;
@@ -126,8 +144,14 @@ namespace System.Runtime.CompilerServices
         }
 
         public ResultHolder (bool cacheable)
+            : this (cacheable, false)
+        {
+        }
+
+        public ResultHolder (bool cacheable, bool forceAsynchronousContinuation)
         {
             Cacheable = cacheable;
+            ForceAsynchronousContinuation = forceAsynchronousContinuation;
         }
 
         public void Reset ()
@@ -148,9 +172,9 @@ namespace System.Runtime.CompilerServices
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread)
+            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
                 callback ();
-            else if (SyncContext != null && SynchronizationContext.Current == SyncContext)
+            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
                 callback ();
             else if (SyncContext != null)
                 SyncContext.Post (InvokeOnContext, callback);

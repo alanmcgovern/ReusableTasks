@@ -45,7 +45,7 @@ namespace ReusableTasks
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder))]
     public readonly struct ReusableTask
     {
-        internal static ResultHolder<EmptyStruct> CompletedResult = new ResultHolder<EmptyStruct>(false) { Value = new EmptyStruct () };
+        internal static ResultHolder<EmptyStruct> CompletedResult = ResultHolder<EmptyStruct>.CreateUncachedCompleted ();
 
         /// <summary>
         /// Gets an instance of <see cref="ReusableTask"/> which has already been completed. It is safe

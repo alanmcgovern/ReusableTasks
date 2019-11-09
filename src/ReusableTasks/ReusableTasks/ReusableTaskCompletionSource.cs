@@ -29,6 +29,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ReusableTasks
@@ -47,7 +48,7 @@ namespace ReusableTasks
         /// Once the Task has been both completed and awaited it will be reset to it's initial state, allowing
         /// this <see cref="ReusableTaskCompletionSource{T}"/> instance to be reused.
         /// </summary>
-        public ReusableTask<T> Task => new ReusableTask<T> (Result);
+        public ReusableTask<T> Task => new ReusableTask<T> (Result, SynchronizationContext.Current);
 
         /// <summary>
         /// Instantiates a new <see cref="ReusableTaskCompletionSource{T}"/>.
