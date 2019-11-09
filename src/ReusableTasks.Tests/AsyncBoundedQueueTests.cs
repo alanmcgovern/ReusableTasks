@@ -5,12 +5,12 @@ using NUnit.Framework;
 namespace ReusableTasks.Tests
 {
     [TestFixture]
-    public class AsyncBoundedQueueTests
+    public class AsyncProducerConsumerQueueTests
     {
         [Test]
         public async Task DequeueFirst ()
         {
-            var queue = new AsyncBoundedQueue<int> (2);
+            var queue = new AsyncProducerConsumerQueue<int> (2);
 
             var task = queue.DequeueAsync ();
             Assert.IsFalse (task.IsCompleted, "#1");
@@ -22,7 +22,7 @@ namespace ReusableTasks.Tests
         [Test]
         public async Task EnqueueFirst ()
         {
-            var queue = new AsyncBoundedQueue<int> (2);
+            var queue = new AsyncProducerConsumerQueue<int> (2);
 
             await queue.EnqueueAsync (5).WithTimeout ("#1");
             Assert.AreEqual (5, await queue.DequeueAsync (), "#2");
@@ -31,7 +31,7 @@ namespace ReusableTasks.Tests
         [Test]
         public async Task EnqueueTooMany ()
         {
-            var queue = new AsyncBoundedQueue<int> (1);
+            var queue = new AsyncProducerConsumerQueue<int> (1);
             await queue.EnqueueAsync (5).WithTimeout ("#1");
 
             var task2 = queue.EnqueueAsync (5);
@@ -46,7 +46,7 @@ namespace ReusableTasks.Tests
         [Test]
         public async Task EmptyTwice ()
         {
-            var queue = new AsyncBoundedQueue<int> (1);
+            var queue = new AsyncProducerConsumerQueue<int> (1);
             await queue.EnqueueAsync (1);
             await queue.DequeueAsync ();
             await queue.EnqueueAsync (1);

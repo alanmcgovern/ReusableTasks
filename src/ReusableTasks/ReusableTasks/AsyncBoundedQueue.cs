@@ -8,7 +8,7 @@ namespace ReusableTasks
     /// supports a single producer and single consumer. The capacity can be bounded, or unbounded.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class AsyncBoundedQueue<T>
+    public class AsyncProducerConsumerQueue<T>
     {
         /// <summary>
         /// The maximum number of work items which can be queued. A value of zero means there is
@@ -27,11 +27,11 @@ namespace ReusableTasks
         Queue<T> Queue { get; }
 
         /// <summary>
-        /// Creates a new instance of <see cref="AsyncBoundedQueue{T}"/>.
+        /// Creates a new instance of <see cref="AsyncProducerConsumerQueue{T}"/>.
         /// </summary>
         /// <param name="capacity">A value of 0 means the collection has an unbounded size. A value greater
         /// than zero represents the maximum number of items which can be queued.</param>
-        public AsyncBoundedQueue (int capacity)
+        public AsyncProducerConsumerQueue (int capacity)
         {
             Capacity = capacity;
             Dequeued = new ReusableTaskCompletionSource<bool> (true);
