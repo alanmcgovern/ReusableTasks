@@ -28,6 +28,7 @@
 
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -44,14 +45,20 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T> : ResultHolder
     {
-        const int CacheableFlag = 1 << 30;
+        const int CacheableFlag = 1 << 29;
+        const int ForceAsynchronousContinuationFlag = 1 << 30;
         const int HasValueFlag = 1 << 31;
-        const int IdMask = ~0 ^ (CacheableFlag | HasValueFlag);
+        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag);
+
+        internal static ResultHolder<T> CreateUncachedCompleted ()
+        {
+            var result = new ResultHolder<T> (false);
+            result.TrySetExceptionOrResult (null, default);
+            return result;
+        }
 
         Action continuation;
-        Exception exception;
         int state;
-        T result;
 
         public bool Cacheable {
             get => (state & CacheableFlag) == CacheableFlag;
@@ -84,63 +91,99 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public Exception Exception {
-            get => exception;
-            set {
-                exception = value;
-                state |= HasValueFlag;
-
-                // If 'continuation' is set to 'null' then we have not yet set a continuation.
-                // In this scenario, set the continuation to a value signifying the result is now available.
-                var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
-                if (action != null) {
-                    // This means the value returned by the CompareExchange was the continuation passed by the
-                    // compiler, so we can directly execute it now that we have set a value.
-                    TryInvoke(action);
-                }
-            }
-        }
+        public Exception Exception { get; private set; }
 
         public bool HasValue
             => (state & HasValueFlag) == HasValueFlag;
+
+        public bool ForceAsynchronousContinuation {
+            get => (state & ForceAsynchronousContinuationFlag) == ForceAsynchronousContinuationFlag;
+            set {
+                if (value)
+                    state |= ForceAsynchronousContinuationFlag;
+                else
+                    state &= ~ForceAsynchronousContinuationFlag;
+            }
+        }
 
         public int Id => state & IdMask;
 
         public SynchronizationContext SyncContext;
 
-        public T Value {
-            get => result;
-            set {
-                result = value;
-                state |= HasValueFlag;
-
-                // If 'continuation' is set to 'null' then we have not yet set a continuation.
-                // In this scenario, set the continuation to a value signifying the result is now available.
-                var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
-                if (action != null) {
-                    // This means the value returned by the CompareExchange was the continuation passed by the
-                    // compiler, so we can directly execute it now that we have set a value.
-                    TryInvoke(action);
-                }
-            }
-        }
+        public T Value { get; private set; }
 
         public ResultHolder (bool cacheable)
+            : this (cacheable, false)
+        {
+        }
+
+        public ResultHolder (bool cacheable, bool forceAsynchronousContinuation)
         {
             Cacheable = cacheable;
+            ForceAsynchronousContinuation = forceAsynchronousContinuation;
         }
 
         public void Reset ()
         {
             continuation = null;
-            exception = null;
+            Exception = null;
             if (Cacheable) {
                 state = ((state + 1) & IdMask) | CacheableFlag;
             } else {
                 state = ((state + 1) & IdMask);
             }
-            result = default;
             SyncContext = null;
+            Value = default;
+        }
+
+        public void SetCanceled ()
+        {
+            if (!TrySetCanceled ())
+                throw new InvalidOperationException ("A result has already been set on this object");
+        }
+
+        public void SetException (Exception exception)
+        {
+            if (!TrySetException (exception))
+                throw new InvalidOperationException ("A result has already been set on this object");
+        }
+
+        public void SetResult (T result)
+        {
+            if (!TrySetResult (result))
+                throw new InvalidOperationException ("A result has already been set on this object");
+        }
+
+        public bool TrySetCanceled ()
+            => TrySetExceptionOrResult (new TaskCanceledException (), default);
+
+        public bool TrySetException (Exception exception)
+            => TrySetExceptionOrResult (exception, default);
+
+        public bool TrySetResult (T result)
+            => TrySetExceptionOrResult (null, result);
+
+        bool TrySetExceptionOrResult (Exception exception, T result)
+        {
+            var originalState = state;
+            if ((originalState & HasValueFlag) == HasValueFlag)
+                return false;
+
+            if (Interlocked.CompareExchange (ref state, originalState | HasValueFlag, originalState) != originalState)
+                return false;
+
+            Exception = exception;
+            Value = result;
+
+            // If 'continuation' is set to 'null' then we have not yet set a continuation.
+            // In this scenario, set the continuation to a value signifying the result is now available.
+            var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
+            if (action != null) {
+                // This means the value returned by the CompareExchange was the continuation passed by the
+                // compiler, so we can directly execute it now that we have set a value.
+                TryInvoke(action);
+            }
+            return true;
         }
 
         void TryInvoke (Action callback)
@@ -148,9 +191,9 @@ namespace System.Runtime.CompilerServices
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread)
+            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
                 callback ();
-            else if (SyncContext != null && SynchronizationContext.Current == SyncContext)
+            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
                 callback ();
             else if (SyncContext != null)
                 SyncContext.Post (InvokeOnContext, callback);

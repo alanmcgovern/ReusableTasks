@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
                  lock (Cache)
                     task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
             }
-            task.ResultHolder.Exception = e;
+            task.ResultHolder.SetException (e);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace System.Runtime.CompilerServices
             if (task.ResultHolder == null)
                 task = new ReusableTask<T> (result);
             else
-                task.ResultHolder.Value = result;
+                task.ResultHolder.SetResult (result);
         }
 
         /// <summary>

@@ -29,6 +29,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ReusableTasks
@@ -47,32 +48,67 @@ namespace ReusableTasks
         /// Once the Task has been both completed and awaited it will be reset to it's initial state, allowing
         /// this <see cref="ReusableTaskCompletionSource{T}"/> instance to be reused.
         /// </summary>
-        public ReusableTask<T> Task => new ReusableTask<T> (Result);
+        public ReusableTask<T> Task => new ReusableTask<T> (Result, SynchronizationContext.Current);
 
         /// <summary>
         /// Instantiates a new <see cref="ReusableTaskCompletionSource{T}"/>.
         /// </summary>
         public ReusableTaskCompletionSource ()
+            : this (false)
         {
-            Result = new ResultHolder<T> (false);
+        }
+
+        /// <summary>
+        /// The <see cref="ReusableTask{T}"/> controlled by this <see cref="ReusableTaskCompletionSource{T}"/>.
+        /// Once the Task has been both completed and awaited it will be reset to it's initial state, allowing
+        /// this <see cref="ReusableTaskCompletionSource{T}"/> instance to be reused.
+        /// </summary>
+        /// <param name="forceAsynchronousContinuation">True if the continuation should always be invoked asynchronously.</param>
+        public ReusableTaskCompletionSource (bool forceAsynchronousContinuation)
+        {
+            Result = new ResultHolder<T> (false, forceAsynchronousContinuation);
         }
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Canceled state. 
         /// </summary>
         public void SetCanceled ()
-            => Result.Exception = new TaskCanceledException ();
+            => Result.SetCanceled ();
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Faulted state using the specified exception. 
         /// </summary>
-        public void SetException (Exception ex)
-            => Result.Exception = ex;
+        public void SetException (Exception exception)
+            => Result.SetException (exception);
 
         /// <summary>
         /// Moves <see cref="Task"/> to the Faulted state using the specified exception. 
         /// </summary>
         public void SetResult (T result)
-            => Result.Value = result;
+            => Result.SetResult (result);
+
+        /// <summary>
+        /// Returns true if the underlying task is successfully marked as canceled. Returns false
+        /// if the underlying task has already completed.
+        /// </summary>
+        /// <returns></returns>
+        public bool TrySetCanceled ()
+            => Result.TrySetCanceled  ();
+
+        /// <summary>
+        /// Returns true if the underlying task is successfully marked as faulted. Returns false
+        /// if the underlying task has already completed.
+        /// </summary>
+        /// <returns></returns>
+        public bool TrySetException (Exception exception)
+            => Result.TrySetException (exception);
+
+        /// <summary>
+        /// Returns true if the underlying task is successfully marked as completed. Returns false
+        /// if the underlying task has already completed.
+        /// </summary>
+        /// <returns></returns>
+        public bool TrySetResult (T result)
+            => Result.TrySetResult (result);
     }
 }

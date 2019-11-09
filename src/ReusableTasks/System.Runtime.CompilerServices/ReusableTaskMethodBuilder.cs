@@ -97,7 +97,7 @@ namespace System.Runtime.CompilerServices
             if (task.ResultHolder == null)
                  lock (Cache)
                     task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
-            task.ResultHolder.Exception = e;
+            task.ResultHolder.SetException (e);
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace System.Runtime.CompilerServices
             if (task.ResultHolder == null)
                 task = ReusableTask.CompletedTask;
             else
-                task.ResultHolder.Value = new EmptyStruct ();
+                task.ResultHolder.SetResult (new EmptyStruct ());
         }
 
         /// <summary>
