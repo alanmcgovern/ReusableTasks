@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -6,7 +7,8 @@ namespace ReusableTasks.Tests
 {
     public static class ReusableTaskExtensions
     {
-        const int Timeout = 1000;
+        static readonly int Timeout = Debugger.IsAttached ? -1 : 1000;
+
         public static async ReusableTask WithTimeout (this ReusableTask task, string message)
         {
             var t = task.AsTask ();
