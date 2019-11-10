@@ -17,6 +17,16 @@ namespace ReusableTasks
         public int Capacity { get; }
 
         /// <summary>
+        /// The number of items in the queue.
+        /// </summary>
+        public int Count => Queue.Count;
+
+        /// <summary>
+        /// Returns true if no more items will be added to the queue.
+        /// </summary>
+        public bool IsAddingCompleted { get; private set; }
+
+        /// <summary>
         /// Returns true if the capacity  is greater than zero, indicating a limited number of
         /// items can be queued at any one time.
         /// </summary>
@@ -40,25 +50,16 @@ namespace ReusableTasks
         }
 
         /// <summary>
-        /// The new item will be enqueued synchronously if the number of items already
-        /// enqueued is less than the capacity. Otherwise an item must be dequeued before the new item
-        /// will be added.
-        /// /// </summary>
-        /// <param name="value">The item to enqueue</param>
-        /// <returns></returns>
-        public async ReusableTask EnqueueAsync (T value)
+        /// Sets <see cref="IsAddingCompleted"/> to true and interrupts any pending <see cref="DequeueAsync"/>
+        /// calls if the collection is already empty. Future calls to <see cref="EnqueueAsync(T)"/> will throw
+        /// an <see cref="InvalidOperationException"/>.
+        /// </summary>
+        public void CompleteAdding ()
         {
-            while (true) {
-                lock (Queue) {
-                    if (Queue.Count < Capacity || !IsBounded) {
-                        Queue.Enqueue (value);
-                        if (Queue.Count == 1)
-                            Enqueued.TrySetResult (true);
-                        return;
-                    }
-                }
-                await Dequeued.Task;
+            lock (Queue) {
+                IsAddingCompleted = true;
             }
+            Enqueued.TrySetResult (true);
         }
 
         /// <summary>
@@ -71,6 +72,9 @@ namespace ReusableTasks
         {
             while (true) {
                 lock (Queue) {
+                    if (Queue.Count == 0 && IsAddingCompleted)
+                        throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
+
                     if (Queue.Count > 0 || !IsBounded) {
                         var result = Queue.Dequeue ();
                         if (Queue.Count == Capacity - 1)
@@ -78,8 +82,32 @@ namespace ReusableTasks
                         return result;
                     }
                 }
-
                 await Enqueued.Task;
+            }
+        }
+
+        /// <summary>
+        /// The new item will be enqueued synchronously if the number of items already
+        /// enqueued is less than the capacity. Otherwise an item must be dequeued before the new item
+        /// will be added.
+        /// /// </summary>
+        /// <param name="value">The item to enqueue</param>
+        /// <returns></returns>
+        public async ReusableTask EnqueueAsync (T value)
+        {
+            if (IsAddingCompleted)
+                throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
+
+            while (true) {
+                lock (Queue) {
+                    if (Queue.Count < Capacity || !IsBounded) {
+                        Queue.Enqueue (value);
+                        if (Queue.Count == 1)
+                            Enqueued.TrySetResult (true);
+                        return;
+                    }
+                }
+                await Dequeued.Task;
             }
         }
     }
