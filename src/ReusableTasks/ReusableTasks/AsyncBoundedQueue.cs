@@ -101,7 +101,7 @@ namespace ReusableTasks
                     if (Queue.Count == 0 && IsAddingCompleted)
                         throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
-                    if (Queue.Count > 0 || !IsBounded) {
+                    if (Queue.Count > 0) {
                         token.ThrowIfCancellationRequested();
                         var result = Queue.Dequeue ();
                         if (Queue.Count == Capacity - 1)
