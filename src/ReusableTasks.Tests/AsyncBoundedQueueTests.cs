@@ -114,7 +114,7 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public async Task DequeueFirst ()
+        public async Task DequeueFirst_Bounded ()
         {
             var queue = new AsyncProducerConsumerQueue<int> (2);
 
@@ -123,6 +123,18 @@ namespace ReusableTasks.Tests
 
             await queue.EnqueueAsync (5);
             Assert.AreEqual (5, await task.WithTimeout ("#2"));
+        }
+
+        [Test]
+        public async Task DequeueFirst_Unbounded()
+        {
+            var queue = new AsyncProducerConsumerQueue<int>(0);
+
+            var task = queue.DequeueAsync();
+            Assert.IsFalse(task.IsCompleted, "#1");
+
+            await queue.EnqueueAsync(5);
+            Assert.AreEqual(5, await task.WithTimeout("#2"));
         }
 
         [Test]
