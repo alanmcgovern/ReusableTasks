@@ -66,7 +66,7 @@ namespace ReusableTasks
         void CancelEnqueued() => Enqueued.TrySetCanceled();
 
         /// <summary>
-        /// Sets <see cref="IsAddingCompleted"/> to true and interrupts any pending <see cref="DequeueAsync"/>
+        /// Sets <see cref="IsAddingCompleted"/> to true and interrupts any pending <see cref="DequeueAsync()"/>
         /// calls if the collection is already empty. Future calls to <see cref="EnqueueAsync(T)"/> will throw
         /// an <see cref="InvalidOperationException"/>.
         /// </summary>
