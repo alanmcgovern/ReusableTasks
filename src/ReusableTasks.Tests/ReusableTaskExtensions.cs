@@ -14,6 +14,7 @@ namespace ReusableTasks.Tests
             var t = task.AsTask ();
             if (await Task.WhenAny (Task.Delay (Timeout), t) != t)
                 Assert.Fail ("The task timed out. {0}", message);
+            await t;
         }
 
         public static async ReusableTask<T> WithTimeout<T> (this ReusableTask<T> task, string message)
