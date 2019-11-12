@@ -48,7 +48,10 @@ namespace System.Runtime.CompilerServices
         const int CacheableFlag = 1 << 29;
         const int ForceAsynchronousContinuationFlag = 1 << 30;
         const int HasValueFlag = 1 << 31;
+        // The top 3 bits are reserved for various flags, the rest is used for the unique ID.
         const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag);
+        // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
+        const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
         internal static ResultHolder<T> CreateUncachedCompleted ()
         {
@@ -127,11 +130,8 @@ namespace System.Runtime.CompilerServices
         {
             continuation = null;
             Exception = null;
-            if (Cacheable) {
-                state = ((state + 1) & IdMask) | CacheableFlag;
-            } else {
-                state = ((state + 1) & IdMask);
-            }
+            var retained = state & RetainedFlags;
+            state = ((state + 1) & IdMask) | retained;
             SyncContext = null;
             Value = default;
         }
