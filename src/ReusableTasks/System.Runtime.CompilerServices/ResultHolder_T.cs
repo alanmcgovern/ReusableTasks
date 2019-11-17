@@ -46,11 +46,12 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T> : ResultHolder
     {
+        const int SettingValueFlag = 1 << 28;
         const int CacheableFlag = 1 << 29;
         const int ForceAsynchronousContinuationFlag = 1 << 30;
         const int HasValueFlag = 1 << 31;
         // The top 3 bits are reserved for various flags, the rest is used for the unique ID.
-        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag);
+        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag | SettingValueFlag);
         // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
         const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
@@ -114,7 +115,7 @@ namespace System.Runtime.CompilerServices
 
         public SynchronizationContext SyncContext;
 
-        public T Value { get; private set; }
+        T Value { get; set; }
 
         public ResultHolder (bool cacheable)
             : this (cacheable, false)
@@ -126,6 +127,9 @@ namespace System.Runtime.CompilerServices
             Cacheable = cacheable;
             ForceAsynchronousContinuation = forceAsynchronousContinuation;
         }
+
+        public T GetResult ()
+            =>  Value;
 
         public void Reset ()
         {
@@ -167,14 +171,16 @@ namespace System.Runtime.CompilerServices
         bool TrySetExceptionOrResult (Exception exception, T result)
         {
             var originalState = state;
-            if ((originalState & HasValueFlag) == HasValueFlag)
+            if ((originalState & SettingValueFlag) == SettingValueFlag)
                 return false;
 
-            if (Interlocked.CompareExchange (ref state, originalState | HasValueFlag, originalState) != originalState)
+            if (Interlocked.CompareExchange (ref state, originalState | SettingValueFlag, originalState) != originalState)
                 return false;
 
+            // Set the exception/value and update the state
             Exception = exception;
             Value = result;
+            state = originalState | SettingValueFlag | HasValueFlag;
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.

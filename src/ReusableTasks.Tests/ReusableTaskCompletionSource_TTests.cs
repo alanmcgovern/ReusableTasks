@@ -28,6 +28,7 @@
 
 
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,6 +98,22 @@ namespace ReusableTasks.Tests
             tcs.SetResult (2);
             Assert.AreEqual (2, await tcs.Task, "#6");
             Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#7");
+        }
+
+        [Test]
+        public async Task StressTest()
+        {
+            for (int i = 0; i < 50000; i ++)
+            {
+                var tcs = new ReusableTaskCompletionSource<int>();
+                await Task.WhenAll(
+                    Task.Run(() => { tcs.SetResult(111); }),
+                    Task.Run(async () =>  {
+                        var result = await tcs.Task;
+                        Assert.AreEqual(111, result);
+                    })
+                );
+            }
         }
     }
 }

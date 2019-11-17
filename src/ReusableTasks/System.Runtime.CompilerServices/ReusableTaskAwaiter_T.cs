@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices
             if (Task.ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.Value;
+            var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.GetResult ();
             var exception = Task.ResultHolder?.Exception;
             if (Task.ResultHolder != ReusableTask<T>.SyncCompleted)
                 ReusableTaskMethodBuilder<T>.Release (Task.ResultHolder);
