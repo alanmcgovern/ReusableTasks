@@ -86,7 +86,7 @@ namespace ReusableTasks.Tests
             var task = Test ();
             var awaiter = task.GetAwaiter ();
             awaiter.GetResult ();
-            Assert.Throws<InvalidOperationException> (() => awaiter.GetResult (), "#1");
+            Assert.Throws<InvalidTaskReuseException> (() => awaiter.GetResult (), "#1");
         }
 
         [Test]
@@ -101,7 +101,7 @@ namespace ReusableTasks.Tests
             var task = Test ();
             var awaiter = task.GetAwaiter ();
             awaiter.OnCompleted (() => { });
-            Assert.Throws<InvalidOperationException> (() => awaiter.OnCompleted (() => { }), "#1");
+            Assert.Throws<InvalidTaskReuseException> (() => awaiter.OnCompleted (() => { }), "#1");
         }
 
         [Test]

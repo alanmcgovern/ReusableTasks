@@ -64,7 +64,7 @@ namespace System.Runtime.CompilerServices
         public void GetResult()
         {
             if (Result.Id != Id)
-                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
             var exception = Result.Exception;
             if (Result.Cacheable)
@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
         public void OnCompleted (Action continuation)
         {
             if (Result.Id != Id)
-                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
             Result.Continuation = continuation;
         }

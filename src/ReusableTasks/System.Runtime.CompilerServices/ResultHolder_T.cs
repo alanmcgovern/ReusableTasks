@@ -27,6 +27,7 @@
 //
 
 
+using ReusableTasks;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,7 +38,7 @@ namespace System.Runtime.CompilerServices
         protected static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
         protected static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
 
-        protected static Action HasValueSentinel = () => { throw new Exception ("HasValueSentinel - Should not be invoked."); };
+        protected static Action HasValueSentinel = () => { throw new InvalidTaskReuseException ("HasValueSentinel - Should not be invoked."); };
     }
 
     /// <summary>
@@ -86,10 +87,10 @@ namespace System.Runtime.CompilerServices
                     // This indicates a value has already been set, so we can execute the
                     // compiler-supplied continuation immediately.
                     if (Interlocked.CompareExchange(ref continuation, value, sentinel) != sentinel)
-                        throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                        throw new InvalidTaskReuseException ("A mismatch was detected when attempting to invoke the continuation. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                     TryInvoke (value);
                 } else if (action != null) {
-                    throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                    throw new InvalidTaskReuseException("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                 }
             }
         }

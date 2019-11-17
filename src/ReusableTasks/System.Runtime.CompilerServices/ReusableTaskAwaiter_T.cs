@@ -64,7 +64,7 @@ namespace System.Runtime.CompilerServices
         public T GetResult()
         {
             if (Task.ResultHolder.Id != Id)
-                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
             var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.Value;
             var exception = Task.ResultHolder?.Exception;
@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
         public void OnCompleted(Action continuation)
         {
             if (Task.ResultHolder.Id != Id)
-                throw new InvalidOperationException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
             Task.ResultHolder.Continuation = continuation;
         }
