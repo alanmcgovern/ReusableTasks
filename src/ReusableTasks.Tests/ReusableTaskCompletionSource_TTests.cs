@@ -26,10 +26,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
+using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Threading;
 using System.Threading.Tasks;
 
 using NUnit.Framework;
@@ -101,19 +100,51 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public async Task StressTest()
+        public async Task StressTest_NoReuse()
         {
-            for (int i = 0; i < 50000; i ++)
-            {
-                var tcs = new ReusableTaskCompletionSource<int>();
-                await Task.WhenAll(
-                    Task.Run(() => { tcs.SetResult(111); }),
-                    Task.Run(async () =>  {
-                        var result = await tcs.Task;
-                        Assert.AreEqual(111, result);
-                    })
-                );
+            var tasks = new List<Task> ();
+
+            for (int count = 0; count < Environment.ProcessorCount * 2; count ++) {
+                tasks.Add (Task.Run (async () => {
+                    for (int i = 0; i < 50000; i ++)
+                    {
+                        var tcs = new ReusableTaskCompletionSource<int>();
+                        await Task.WhenAll(
+                            Task.Run(() => { tcs.SetResult(111); }),
+                            Task.Run(async () =>  {
+                                var result = await tcs.Task;
+                                Assert.AreEqual(111, result);
+                            })
+                        );
+                    }
+                }));
             }
+
+            await Task.WhenAll (tasks);
+        }
+
+        [Test]
+        public async Task StressTest_Reuse()
+        {
+            var tasks = new List<Task> ();
+
+            for (int count = 0; count < Environment.ProcessorCount * 2; count ++) {
+                tasks.Add (Task.Run (async () => {
+                    var tcs = new ReusableTaskCompletionSource<int>();
+                    for (int i = 0; i < 50000; i ++)
+                    {
+                        await Task.WhenAll(
+                            Task.Run(() => { tcs.SetResult(111); }),
+                            Task.Run(async () =>  {
+                                var result = await tcs.Task;
+                                Assert.AreEqual(111, result);
+                            })
+                        );
+                    }
+                }));
+            }
+
+            await Task.WhenAll (tasks);
         }
     }
 }

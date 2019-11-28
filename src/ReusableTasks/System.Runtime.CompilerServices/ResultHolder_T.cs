@@ -46,12 +46,11 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     class ResultHolder<T> : ResultHolder
     {
-        const int SettingValueFlag = 1 << 28;
         const int CacheableFlag = 1 << 29;
         const int ForceAsynchronousContinuationFlag = 1 << 30;
-        const int HasValueFlag = 1 << 31;
+        const int SettingValueFlag = 1 << 31;
         // The top 3 bits are reserved for various flags, the rest is used for the unique ID.
-        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | HasValueFlag | SettingValueFlag);
+        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | SettingValueFlag);
         // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
         const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
@@ -98,8 +97,15 @@ namespace System.Runtime.CompilerServices
 
         public Exception Exception { get; private set; }
 
+        /// <summary>
+        /// The compiler/runtime uses this to check whether or not the awaitable can
+        /// be completed synchronously or asynchronously. If this property is checked
+        /// and 'false' is returned, then 'INotifyCompletion.OnCompleted' will be invoked
+        /// with the delegate we need to asynchronously invoke. If it returns true then
+        /// the compiler/runtime will go ahead and invoke the continuation itself.
+        /// </summary>
         public bool HasValue
-            => (state & HasValueFlag) == HasValueFlag;
+            => continuation == HasValueSentinel;
 
         public bool ForceAsynchronousContinuation {
             get => (state & ForceAsynchronousContinuationFlag) == ForceAsynchronousContinuationFlag;
@@ -180,7 +186,6 @@ namespace System.Runtime.CompilerServices
             // Set the exception/value and update the state
             Exception = exception;
             Value = result;
-            state = originalState | SettingValueFlag | HasValueFlag;
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.
