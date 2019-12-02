@@ -27,6 +27,7 @@
 //
 
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,16 @@ namespace ReusableTasks.Tests
     [TestFixture]
     public class ReusableTask_WithSyncContext_Tests
     {
+        TaskCompletionSource<int> delayingTask;
+
+        [SetUp]
+        public void Setup ()
+        {
+            delayingTask = new TaskCompletionSource<int> (TaskCreationOptions.RunContinuationsAsynchronously);
+            var cancellation = new CancellationTokenSource (TimeSpan.FromSeconds (1));
+            cancellation.Token.Register (() => delayingTask.TrySetCanceled ());
+        }
+
         [Test]
         public async Task SyncMethod_ConfigureTrue ()
         {
@@ -53,7 +64,10 @@ namespace ReusableTasks.Tests
             await TestSynchronizationContext.Instance;
             TestSynchronizationContext.Instance.ResetCounts ();
 
-            await Second ();
+            var task = Second ();
+            delayingTask.SetResult (1);
+            await task;
+
             Assert.AreEqual (0, TestSynchronizationContext.Instance.Posted, "#1");
         }
 
@@ -63,7 +77,10 @@ namespace ReusableTasks.Tests
             await TestSynchronizationContext.Instance;
             TestSynchronizationContext.Instance.ResetCounts ();
 
-            await Third ().ConfigureAwait (false);
+            var task = Third ().ConfigureAwait (false);
+            delayingTask.SetResult (1);
+            await task;
+
             Assert.AreEqual (1, TestSynchronizationContext.Instance.Posted, "#1");
         }
 
@@ -73,7 +90,10 @@ namespace ReusableTasks.Tests
             await TestSynchronizationContext.Instance;
             TestSynchronizationContext.Instance.ResetCounts ();
 
-            await Fourth ().ConfigureAwait (false);
+            var task = Fourth ().ConfigureAwait (false);
+            delayingTask.SetResult (1);
+            await task;
+
             Assert.AreEqual (1, TestSynchronizationContext.Instance.Posted, "#1");
         }
 
@@ -83,7 +103,11 @@ namespace ReusableTasks.Tests
             await TestSynchronizationContext.Instance;
             TestSynchronizationContext.Instance.ResetCounts ();
 
-            await Fifth ().ConfigureAwait (false);
+            var task = Fifth ().ConfigureAwait (false);
+            delayingTask.SetResult (1);
+            await task;
+
+            Assert.AreNotEqual (TestSynchronizationContext.Instance, SynchronizationContext.Current, "#2");
             Assert.AreEqual (1, TestSynchronizationContext.Instance.Posted, "#1");
         }
 
@@ -93,7 +117,10 @@ namespace ReusableTasks.Tests
             await TestSynchronizationContext.Instance;
             TestSynchronizationContext.Instance.ResetCounts ();
 
-            await Sixth ().ConfigureAwait (false);
+            var task = Sixth ().ConfigureAwait (false);
+            delayingTask.SetResult (1);
+            await task;
+
             Assert.AreEqual (0, TestSynchronizationContext.Instance.Posted, "#1");
         }
 
@@ -105,14 +132,15 @@ namespace ReusableTasks.Tests
 
         async ReusableTask DelayMethodCapture ()
         {
-            await Task.Delay (1).ConfigureAwait (true);
+            await delayingTask.Task.ConfigureAwait (true);
             Assert.AreEqual (TestSynchronizationContext.Instance, SynchronizationContext.Current, "#1");
             Assert.IsFalse (Thread.CurrentThread.IsThreadPoolThread, "#2");
         }
 
         async ReusableTask DelayMethodDoNotCapture ()
         {
-            await Task.Delay (1).ConfigureAwait (false);
+            await delayingTask.Task.ConfigureAwait (false);
+
             Assert.AreEqual (null, SynchronizationContext.Current, "#1");
             Assert.IsTrue (Thread.CurrentThread.IsThreadPoolThread, "#2");
         }
