@@ -3,7 +3,7 @@
 [![NuGet version](https://badge.fury.io/nu/reusabletasks.svg)](https://badge.fury.io/nu/reusabletasks)
 [![Build status](https://dev.azure.com/alanmcgovern0144/ReusableTasks/_apis/build/status/ReusableTasks-CI)](https://dev.azure.com/alanmcgovern0144/ReusableTasks/_build/latest?definitionId=3)
 
-A .NET Standard 2.0 compatible library which can be used to implement zero allocation async/await. This is conceptually similar to `ValueTask<T>`, except it's compatible with .NET 2.0 and has zero ongoing allocations once the cache initializes.
+A .NET Standard 2.0 compatible library which can be used to implement zero allocation async/await. This is conceptually similar to `ValueTask<T>`, except it's compatible with .NET 2.0 and has zero ongoing allocations once the internal cache initializes.
 
 Sample usage:
 ```
@@ -20,19 +20,19 @@ async ReusableTask LongInitializationAsync ()
     // Contact a database, load from a file, etc
 }
 
-public async ReusableTask<Cache> CreateCacheAsync ()
+public async ReusableTask<MyData> CreateMyDataAsync ()
 {
     if (!Initialized) {
-        cache = await LongCacheCreationAsync ();
+        mydata = await LongMyDataCreationAsync ();
         Initialized = true;
     }
-    return cache;
+    return mydata;
 }
 
-async ReusableTask<Cache> LongCacheCreationAsync ()
+async ReusableTask<MyData> LongMyDataCreationAsync ()
 {
     // Contact a database, load from a file, etc..
-    return new Cache (....);
+    return new MyData (....);
 }
 ```
 The compiler generated async state machine for these methods is allocation-free, and results in no garbage collectable objects being created no matter how many times the methods are invoked.
