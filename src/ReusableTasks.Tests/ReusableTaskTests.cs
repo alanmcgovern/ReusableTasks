@@ -243,6 +243,27 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
+        public async Task FromResult_TwiceSequential()
+        {
+            var task = ReusableTask.FromResult(5);
+            Assert.AreEqual(0, ReusableTaskMethodBuilder<int>.CacheCount);
+            Assert.IsTrue(task.IsCompleted);
+            Assert.AreEqual(5, await task);
+
+            Assert.AreEqual(15, await ReusableTask.FromResult(15));
+        }
+
+        [Test]
+        public async Task FromResult_TwiceConcurrent()
+        {
+            var task1 = ReusableTask.FromResult(4);
+            var task2 = ReusableTask.FromResult(14);
+
+            Assert.AreEqual(14, await task2);
+            Assert.AreEqual(4, await task1);
+        }
+
+        [Test]
         public void Synchronous_IsCompleted ()
         {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

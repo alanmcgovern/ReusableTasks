@@ -53,6 +53,15 @@ namespace ReusableTasks
         /// </summary>
         public static ReusableTask CompletedTask => new ReusableTask (CompletedResult);
 
+        /// <summary>
+        /// Returns a completed task representing the result
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public static ReusableTask<T> FromResult<T> (T result)
+            => new ReusableTask<T> (result);
+
         readonly int Id;
 
         /// <summary>
