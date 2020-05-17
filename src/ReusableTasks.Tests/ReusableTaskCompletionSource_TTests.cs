@@ -146,5 +146,41 @@ namespace ReusableTasks.Tests
 
             await Task.WhenAll (tasks);
         }
+
+        [Test]
+        public async Task StressTest_Reuse_MultipleSetters()
+        {
+            // Allow synchronous execution of continuations to make it more likely race conditions
+            // will trigger.
+            var tcs1 = new ReusableTaskCompletionSource<int>(forceAsynchronousContinuation: false);
+
+            async Task Thread1()
+            {
+                await Task.Delay(10);
+                while (true)
+                {
+                    tcs1.TrySetResult(1);
+                }
+            }
+            async Task Thread2()
+            {
+                for (int loop = 0; loop < 2000; loop++)
+                {
+                    for (int i = 0; i < 200; i++)
+                    {
+                        int res;
+                        if ((res = await tcs1.Task) != 1) throw new Exception(res.ToString());
+                        if ((res = await tcs1.Task) != 1) throw new Exception(res.ToString());
+                        if ((res = await tcs1.Task) != 1) throw new Exception(res.ToString());
+                        if ((res = await tcs1.Task) != 1) throw new Exception(res.ToString());
+                    }
+                    // Try to ensure we don't stack overflow due to continuations being executed
+                    // synchronously.
+                    await Task.Yield();
+                }
+            }
+
+            await (await Task.WhenAny(Thread1(), Thread1(), Thread1(), Thread2()));
+        }
     }
 }

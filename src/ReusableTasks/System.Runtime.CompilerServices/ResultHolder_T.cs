@@ -66,12 +66,6 @@ namespace System.Runtime.CompilerServices
 
         public bool Cacheable {
             get => (state & CacheableFlag) == CacheableFlag;
-            set {
-                if (value)
-                    state |= CacheableFlag;
-                else
-                    state &= ~CacheableFlag;
-            }
         }
 
         public Action Continuation {
@@ -130,7 +124,7 @@ namespace System.Runtime.CompilerServices
 
         public ResultHolder (bool cacheable, bool forceAsynchronousContinuation)
         {
-            Cacheable = cacheable;
+            state |= cacheable ? CacheableFlag : 0;
             ForceAsynchronousContinuation = forceAsynchronousContinuation;
         }
 
@@ -141,10 +135,11 @@ namespace System.Runtime.CompilerServices
         {
             continuation = null;
             Exception = null;
-            var retained = state & RetainedFlags;
-            state = ((state + 1) & IdMask) | retained;
             SyncContext = null;
             Value = default;
+
+            var retained = state & RetainedFlags;
+            Interlocked.Exchange(ref state, ((state + 1) & IdMask) | retained);
         }
 
         public void SetCanceled ()
