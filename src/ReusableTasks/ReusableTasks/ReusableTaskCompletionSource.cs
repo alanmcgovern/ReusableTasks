@@ -92,7 +92,7 @@ namespace ReusableTasks
         /// if the underlying task has already completed.
         /// </summary>
         /// <returns></returns>
-        public bool TrySetCanceled ()
+        internal bool TrySetCanceled ()
             => Result.TrySetCanceled  ();
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace ReusableTasks
         /// if the underlying task has already completed.
         /// </summary>
         /// <returns></returns>
-        public bool TrySetException (Exception exception)
+        internal bool TrySetException (Exception exception)
             => Result.TrySetException (exception);
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace ReusableTasks
         /// if the underlying task has already completed.
         /// </summary>
         /// <returns></returns>
-        public bool TrySetResult (T result)
+        internal bool TrySetResult (T result)
             => Result.TrySetResult (result);
     }
 }
