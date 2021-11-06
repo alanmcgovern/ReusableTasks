@@ -1,9 +1,10 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReusableTasks", "ReusableTasks\ReusableTasks.csproj", "{3BF57E6F-F7D8-49C9-B7B4-6FA3298A56D3}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31825.309
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReusableTasks", "ReusableTasks\ReusableTasks.csproj", "{3BF57E6F-F7D8-49C9-B7B4-6FA3298A56D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReusableTasks.Tests", "ReusableTasks.Tests\ReusableTasks.Tests.csproj", "{99C257E6-09C2-4540-98B9-1A899D4D5948}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReusableTasks.Tests", "ReusableTasks.Tests\ReusableTasks.Tests.csproj", "{99C257E6-09C2-4540-98B9-1A899D4D5948}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,5 +20,11 @@ Global
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {741D5826-AF23-4A6B-8A54-7D6215347C18}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <ItemGroup Condition="'$(Language)' == 'C#' And '$(DisableAsyncVoidOptimisation)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)\AsyncVoidMethodBuilder.cs">
+      <Link>AsyncVoidMethodBuilder.cs</Link>
+      <Visible>True</Visible>
+    </Compile>
+  </ItemGroup>
+
+</Project>
