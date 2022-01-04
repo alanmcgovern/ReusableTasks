@@ -45,7 +45,7 @@ namespace ReusableTasks
     [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
     public readonly struct ReusableTask<T>
     {
-        internal static ResultHolder<T> SyncCompleted = ResultHolder<T>.CreateUncachedCompleted ();
+        internal static readonly ResultHolder<T> SyncCompleted = ResultHolder<T>.CreateUncachedCompleted ();
 
         /// <summary>
         /// Returns true if the task has completed.

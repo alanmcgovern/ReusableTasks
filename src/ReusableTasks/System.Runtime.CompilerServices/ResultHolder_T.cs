@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         protected static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
         protected static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
 
-        protected static Action HasValueSentinel = () => { throw new InvalidTaskReuseException ("HasValueSentinel - Should not be invoked."); };
+        protected static readonly Action HasValueSentinel = () => { throw new InvalidTaskReuseException ("HasValueSentinel - Should not be invoked."); };
     }
 
     /// <summary>
@@ -76,12 +76,14 @@ namespace System.Runtime.CompilerServices
                 // that when a value is set we can directly invoke the continuation.
                 var sentinel = HasValueSentinel;
                 var action = Interlocked.CompareExchange(ref continuation, value, null);
-                if (action == sentinel) {
+                if (ReferenceEquals(action, sentinel)) {
                     // A non-null action means that the 'HasValueSentinel' was set on the field.
                     // This indicates a value has already been set, so we can execute the
                     // compiler-supplied continuation immediately.
+#if DEBUG
                     if (Interlocked.CompareExchange(ref continuation, value, sentinel) != sentinel)
                         throw new InvalidTaskReuseException ("A mismatch was detected when attempting to invoke the continuation. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+#endif
                     TryInvoke (value);
                 } else if (action != null) {
                     throw new InvalidTaskReuseException("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
@@ -133,13 +135,13 @@ namespace System.Runtime.CompilerServices
 
         public void Reset ()
         {
+            var retained = state & RetainedFlags;
             continuation = null;
             Exception = null;
             SyncContext = null;
             Value = default;
 
-            var retained = state & RetainedFlags;
-            Interlocked.Exchange(ref state, ((state + 1) & IdMask) | retained);
+            state = ((state + 1) & IdMask) | retained;
         }
 
         public void SetCanceled ()
@@ -195,15 +197,18 @@ namespace System.Runtime.CompilerServices
 
         void TryInvoke (Action callback)
         {
+            var context = SyncContext;
+            var forceAsync = ForceAsynchronousContinuation;
+
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
+            if (context == null && Thread.CurrentThread.IsThreadPoolThread && !forceAsync)
                 callback ();
-            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
+            else if (context != null && SynchronizationContext.Current == context && !forceAsync)
                 callback ();
-            else if (SyncContext != null)
-                SyncContext.Post (InvokeOnContext, callback);
+            else if (context != null)
+                context.Post (InvokeOnContext, callback);
             else
                 ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
         }

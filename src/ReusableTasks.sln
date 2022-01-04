@@ -6,6 +6,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReusableTasks", "ReusableTa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReusableTasks.Tests", "ReusableTasks.Tests\ReusableTasks.Tests.csproj", "{99C257E6-09C2-4540-98B9-1A899D4D5948}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmark", "Benchmark\Benchmark.csproj", "{22CA3945-E4CC-4B86-B2FF-5014E79EAEB0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99C257E6-09C2-4540-98B9-1A899D4D5948}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22CA3945-E4CC-4B86-B2FF-5014E79EAEB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22CA3945-E4CC-4B86-B2FF-5014E79EAEB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22CA3945-E4CC-4B86-B2FF-5014E79EAEB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22CA3945-E4CC-4B86-B2FF-5014E79EAEB0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

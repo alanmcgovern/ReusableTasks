@@ -92,7 +92,7 @@ namespace System.Runtime.CompilerServices
         void OnCompleted ()
         {
             var sm = StateMachine;
-            StateMachine = default;
+            //StateMachine = default;
 
             lock (Cache)
                 Cache.Push (this);
