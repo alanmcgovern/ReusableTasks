@@ -205,7 +205,11 @@ namespace System.Runtime.CompilerServices
             else if (SyncContext != null)
                 SyncContext.Post (InvokeOnContext, callback);
             else
+#if NET5_0_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+                ThreadPool.UnsafeQueueUserWorkItem (ActionWorkItem.GetOrCreate (callback), false);
+#else
                 ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
+#endif
         }
     }
 }
