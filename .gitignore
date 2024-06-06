@@ -1,7 +1,9 @@
 .DS_Store
-out/
-src/.vs
+/out/
+/src/.vs
+/src/Benchmark/bin
+/src/Benchmark/obj
 /src/ReusableTasks.Tests/bin/
 /src/ReusableTasks.Tests/obj/
-src/ReusableTasks/bin/
-src/ReusableTasks/obj/
+/src/ReusableTasks/bin/
+/src/ReusableTasks/obj/
