@@ -44,12 +44,10 @@ namespace ReusableTasks
     [AsyncMethodBuilder (typeof (ReusableTaskMethodBuilder<>))]
     public readonly struct ReusableTask<T>
     {
-        internal static ResultHolder<T> SyncCompleted = ResultHolder<T>.CreateUncachedCompleted ();
-
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
-        public bool IsCompleted => ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation;
+        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
 
         readonly int Id;
 
@@ -73,8 +71,8 @@ namespace ReusableTasks
         internal ReusableTask (T result)
         {
             Result = result;
-            ResultHolder = SyncCompleted;
-            Id = ResultHolder.Id;
+            ResultHolder = default;
+            Id = default;
         }
 
         /// <summary>
@@ -94,10 +92,12 @@ namespace ReusableTasks
         /// <returns></returns>
         public ReusableTask<T> ConfigureAwait (bool continueOnCapturedContext)
         {
-            if (continueOnCapturedContext)
-                ResultHolder.SyncContext = SynchronizationContext.Current;
-            else
-                ResultHolder.SyncContext = null;
+            if (ResultHolder != null) {
+                if (continueOnCapturedContext)
+                    ResultHolder.SyncContext = SynchronizationContext.Current;
+                else
+                    ResultHolder.SyncContext = null;
+            }
             return this;
         }
 

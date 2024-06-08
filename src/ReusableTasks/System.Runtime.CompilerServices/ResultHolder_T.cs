@@ -55,12 +55,6 @@ namespace System.Runtime.CompilerServices
         // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
         const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
-        internal static ResultHolder<T> CreateUncachedCompleted ()
-        {
-            var result = new ResultHolder<T> (false);
-            result.TrySetExceptionOrResult (null, default);
-            return result;
-        }
 
         Action continuation;
         int state;

@@ -64,13 +64,16 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public T GetResult ()
         {
+            // Represents a successfully completed task no data.
+            if (Task.ResultHolder == null)
+                return Task.Result; // This is either the value passed into `ReusableTask.FromResult` or it's default(T) because someone just did `await new ReusableTask<T> ()`.
+
             if (Task.ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            var result = Task.ResultHolder == ReusableTask<T>.SyncCompleted ? Task.Result : Task.ResultHolder.GetResult ();
-            var exception = Task.ResultHolder?.Exception;
-            if (Task.ResultHolder != ReusableTask<T>.SyncCompleted)
-                ReusableTaskMethodBuilder<T>.Release (Task.ResultHolder);
+            var result = Task.ResultHolder.GetResult ();
+            var exception = Task.ResultHolder.Exception;
+            ReusableTaskMethodBuilder<T>.Release (Task.ResultHolder);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();

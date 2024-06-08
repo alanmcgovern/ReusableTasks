@@ -224,8 +224,11 @@ namespace ReusableTasks.Tests
         public async Task CompletedTask ()
         {
             await ReusableTask.CompletedTask;
-            await ReusableTask.CompletedTask;
-            await ReusableTask.CompletedTask;
+            await ReusableTask.CompletedTask.ConfigureAwait (false);
+            await ReusableTask.CompletedTask.ConfigureAwait (true);
+            ReusableTask.CompletedTask.GetAwaiter ().GetResult ();
+            Assert.IsTrue (ReusableTask.CompletedTask.IsCompleted);
+            Assert.IsTrue (ReusableTask.CompletedTask.GetAwaiter ().IsCompleted);
         }
 
         [Test]

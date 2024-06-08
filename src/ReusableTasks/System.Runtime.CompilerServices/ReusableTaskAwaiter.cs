@@ -28,36 +28,6 @@
 
 
 using System.Runtime.ExceptionServices;
-/* Unmerged change from project 'ReusableTasks (netstandard2.0)'
-Before:
-using System.Threading;
-using ReusableTasks;
-After:
-using System.Threading;
-
-using ReusableTasks;
-*/
-
-/* Unmerged change from project 'ReusableTasks (net5.0)'
-Before:
-using System.Threading;
-using ReusableTasks;
-After:
-using System.Threading;
-
-using ReusableTasks;
-*/
-
-/* Unmerged change from project 'ReusableTasks (netcoreapp3.0)'
-Before:
-using System.Threading;
-using ReusableTasks;
-After:
-using System.Threading;
-
-using ReusableTasks;
-*/
-
 
 using ReusableTasks;
 
@@ -73,7 +43,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => Result.HasValue;
+        public bool IsCompleted => Result == null || Result.HasValue;
 
         ResultHolder<EmptyStruct> Result { get; }
 
@@ -93,6 +63,10 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public void GetResult ()
         {
+            // This respresents a 'ReusableTask.CompletedTask'. This is a successfully completed task with no errors.
+            if (Result == null)
+                return;
+
             if (Result.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 

@@ -77,10 +77,20 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public void NotInCache ()
+        public async Task NotInCache ()
         {
             _ = new ReusableTaskCompletionSource<int> ();
             Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#1");
+
+            var tcs = new ReusableTaskCompletionSource<int> ();
+            tcs.SetResult (5);
+            await tcs.Task;
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
+
+            tcs = new ReusableTaskCompletionSource<int> ();
+            tcs.SetResult (5);
+            await tcs.Task;
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount, "#2");
         }
 
         [Test]
