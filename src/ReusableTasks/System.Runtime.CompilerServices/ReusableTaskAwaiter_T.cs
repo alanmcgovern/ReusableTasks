@@ -28,6 +28,7 @@
 
 
 using System.Runtime.ExceptionServices;
+
 using ReusableTasks;
 
 namespace System.Runtime.CompilerServices
@@ -61,7 +62,7 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <returns></returns>
-        public T GetResult()
+        public T GetResult ()
         {
             if (Task.ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
@@ -80,7 +81,7 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <param name="continuation"></param>
-        public void OnCompleted(Action continuation)
+        public void OnCompleted (Action continuation)
         {
             if (Task.ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");

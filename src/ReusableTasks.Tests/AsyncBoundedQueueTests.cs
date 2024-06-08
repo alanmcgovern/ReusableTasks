@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using NUnit.Framework;
 
 namespace ReusableTasks.Tests
@@ -9,68 +10,68 @@ namespace ReusableTasks.Tests
     public class AsyncProducerConsumerQueueTests
     {
         [Test]
-        public void CancelBeforeAsynchronousDequeue()
+        public void CancelBeforeAsynchronousDequeue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
 
-            cts.Cancel();
-            Assert.ThrowsAsync<TaskCanceledException>(() => queue.DequeueAsync(cts.Token).WithTimeout("#1").AsTask());
+            cts.Cancel ();
+            Assert.ThrowsAsync<TaskCanceledException> (() => queue.DequeueAsync (cts.Token).WithTimeout ("#1").AsTask ());
         }
 
         [Test]
-        public async Task CancelBeforeAsynchronousEnqueue()
+        public async Task CancelBeforeAsynchronousEnqueue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
-            await queue.EnqueueAsync(1);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
+            await queue.EnqueueAsync (1);
 
-            cts.Cancel();
-            Assert.ThrowsAsync<TaskCanceledException>(() => queue.EnqueueAsync(1, cts.Token).WithTimeout("#1").AsTask());
+            cts.Cancel ();
+            Assert.ThrowsAsync<TaskCanceledException> (() => queue.EnqueueAsync (1, cts.Token).WithTimeout ("#1").AsTask ());
         }
 
         [Test]
-        public async Task CancelBeforeSynchronousDequeue()
+        public async Task CancelBeforeSynchronousDequeue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
-            await queue.EnqueueAsync(1);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
+            await queue.EnqueueAsync (1);
 
-            cts.Cancel();
-            Assert.ThrowsAsync<OperationCanceledException>(() => queue.DequeueAsync(cts.Token).WithTimeout("#1").AsTask ());
+            cts.Cancel ();
+            Assert.ThrowsAsync<OperationCanceledException> (() => queue.DequeueAsync (cts.Token).WithTimeout ("#1").AsTask ());
         }
 
         [Test]
-        public void CancelBeforeSynchronousEnqueue()
+        public void CancelBeforeSynchronousEnqueue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
 
-            cts.Cancel();
-            Assert.ThrowsAsync<OperationCanceledException>(() => queue.EnqueueAsync(1, cts.Token).WithTimeout("#1").AsTask());
+            cts.Cancel ();
+            Assert.ThrowsAsync<OperationCanceledException> (() => queue.EnqueueAsync (1, cts.Token).WithTimeout ("#1").AsTask ());
         }
 
         [Test]
-        public void CancelWithPendingDequeue()
+        public void CancelWithPendingDequeue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
 
-            var task = queue.DequeueAsync(cts.Token).WithTimeout("#1").AsTask();
-            cts.Cancel();
-            Assert.ThrowsAsync<TaskCanceledException>(() => task, "#1");
+            var task = queue.DequeueAsync (cts.Token).WithTimeout ("#1").AsTask ();
+            cts.Cancel ();
+            Assert.ThrowsAsync<TaskCanceledException> (() => task, "#1");
         }
 
         [Test]
-        public async Task CancelWithPendingEnqueue()
+        public async Task CancelWithPendingEnqueue ()
         {
-            var cts = new CancellationTokenSource();
-            var queue = new AsyncProducerConsumerQueue<int>(1);
-            await queue.EnqueueAsync(10);
+            var cts = new CancellationTokenSource ();
+            var queue = new AsyncProducerConsumerQueue<int> (1);
+            await queue.EnqueueAsync (10);
 
-            var task = queue.EnqueueAsync(123, cts.Token).WithTimeout("#1").AsTask();
-            cts.Cancel();
-            Assert.ThrowsAsync<TaskCanceledException>(() => task, "#1");
+            var task = queue.EnqueueAsync (123, cts.Token).WithTimeout ("#1").AsTask ();
+            cts.Cancel ();
+            Assert.ThrowsAsync<TaskCanceledException> (() => task, "#1");
         }
 
         [Test]
@@ -126,15 +127,15 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public async Task DequeueFirst_Unbounded()
+        public async Task DequeueFirst_Unbounded ()
         {
-            var queue = new AsyncProducerConsumerQueue<int>(0);
+            var queue = new AsyncProducerConsumerQueue<int> (0);
 
-            var task = queue.DequeueAsync();
-            Assert.IsFalse(task.IsCompleted, "#1");
+            var task = queue.DequeueAsync ();
+            Assert.IsFalse (task.IsCompleted, "#1");
 
-            await queue.EnqueueAsync(5);
-            Assert.AreEqual(5, await task.WithTimeout("#2"));
+            await queue.EnqueueAsync (5);
+            Assert.AreEqual (5, await task.WithTimeout ("#2"));
         }
 
         [Test]

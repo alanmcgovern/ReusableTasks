@@ -27,7 +27,6 @@
 //
 
 
-using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +41,7 @@ namespace ReusableTasks
     /// If an instance of <see cref="ReusableTask"/> is awaited twice, then it will corrupt the cache and
     /// future behaviour will be indeterminate.
     /// </summary>
-    [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder))]
+    [AsyncMethodBuilder (typeof (ReusableTaskMethodBuilder))]
     public readonly struct ReusableTask
     {
         internal static ResultHolder<EmptyStruct> CompletedResult = ResultHolder<EmptyStruct>.CreateUncachedCompleted ();

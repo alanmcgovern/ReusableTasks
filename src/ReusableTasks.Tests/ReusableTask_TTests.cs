@@ -155,7 +155,7 @@ namespace ReusableTasks.Tests
         public async Task Asynchronous_IsCompleted ()
         {
             var firstWaiter = new SemaphoreSlim (0, 1);
-            var secondWaiter  = new SemaphoreSlim (0, 1);
+            var secondWaiter = new SemaphoreSlim (0, 1);
 
             async ReusableTask<int> Test ()
             {

@@ -93,7 +93,7 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         internal bool TrySetCanceled ()
-            => Result.TrySetCanceled  ();
+            => Result.TrySetCanceled ();
 
         /// <summary>
         /// Returns true if the underlying task is successfully marked as faulted. Returns false

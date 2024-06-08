@@ -68,16 +68,16 @@ namespace ReusableTasks.Tests
 
         public override void Post (SendOrPostCallback d, object state)
         {
-            Posted ++;
+            Posted++;
 
-            Callbacks.Add (() => d(state));
+            Callbacks.Add (() => d (state));
         }
 
         public override void Send (SendOrPostCallback d, object state)
         {
-            Sent ++;
+            Sent++;
 
-            var waiter = new ManualResetEventSlim(false);
+            var waiter = new ManualResetEventSlim (false);
             Action action = () => {
                 d (state);
                 waiter.Set ();
@@ -92,12 +92,12 @@ namespace ReusableTasks.Tests
 
         public bool IsCompleted => thread == Thread.CurrentThread;
 
-        public void GetResult()
+        public void GetResult ()
         {
 
         }
 
-        void INotifyCompletion.OnCompleted(Action continuation)
+        void INotifyCompletion.OnCompleted (Action continuation)
             => Callbacks.Add (continuation);
     }
 }

@@ -27,9 +27,10 @@
 //
 
 
-using ReusableTasks;
 using System.Threading;
 using System.Threading.Tasks;
+
+using ReusableTasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -75,16 +76,16 @@ namespace System.Runtime.CompilerServices
                 // scenario we should place the compiler-supplied continuation in the field so
                 // that when a value is set we can directly invoke the continuation.
                 var sentinel = HasValueSentinel;
-                var action = Interlocked.CompareExchange(ref continuation, value, null);
+                var action = Interlocked.CompareExchange (ref continuation, value, null);
                 if (action == sentinel) {
                     // A non-null action means that the 'HasValueSentinel' was set on the field.
                     // This indicates a value has already been set, so we can execute the
                     // compiler-supplied continuation immediately.
-                    if (Interlocked.CompareExchange(ref continuation, value, sentinel) != sentinel)
+                    if (Interlocked.CompareExchange (ref continuation, value, sentinel) != sentinel)
                         throw new InvalidTaskReuseException ("A mismatch was detected when attempting to invoke the continuation. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                     TryInvoke (value);
                 } else if (action != null) {
-                    throw new InvalidTaskReuseException("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+                    throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                 }
             }
         }
@@ -129,7 +130,7 @@ namespace System.Runtime.CompilerServices
         }
 
         public T GetResult ()
-            =>  Value;
+            => Value;
 
         public void Reset ()
         {
@@ -139,7 +140,7 @@ namespace System.Runtime.CompilerServices
             Value = default;
 
             var retained = state & RetainedFlags;
-            Interlocked.Exchange(ref state, ((state + 1) & IdMask) | retained);
+            Interlocked.Exchange (ref state, ((state + 1) & IdMask) | retained);
         }
 
         public void SetCanceled ()
@@ -184,11 +185,11 @@ namespace System.Runtime.CompilerServices
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.
-            var action = Interlocked.CompareExchange(ref continuation, HasValueSentinel, null);
+            var action = Interlocked.CompareExchange (ref continuation, HasValueSentinel, null);
             if (action != null) {
                 // This means the value returned by the CompareExchange was the continuation passed by the
                 // compiler, so we can directly execute it now that we have set a value.
-                TryInvoke(action);
+                TryInvoke (action);
             }
             return true;
         }

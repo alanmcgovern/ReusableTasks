@@ -157,13 +157,13 @@ namespace ReusableTasks.Tests
             Assert.AreEqual (TestSynchronizationContext.Instance, SynchronizationContext.Current, "#1");
         }
 
-        async ReusableTask Third  ()
+        async ReusableTask Third ()
         {
             await DelayMethodCapture ().ConfigureAwait (true);
             Assert.AreEqual (TestSynchronizationContext.Instance, SynchronizationContext.Current, "#1");
         }
 
-        async ReusableTask Fourth  ()
+        async ReusableTask Fourth ()
         {
             await DelayMethodCapture ().ConfigureAwait (false);
             Assert.AreEqual (null, SynchronizationContext.Current, "#1");

@@ -95,7 +95,7 @@ namespace System.Runtime.CompilerServices
         public void SetException (Exception e)
         {
             if (task.ResultHolder == null)
-                 lock (Cache)
+                lock (Cache)
                     task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
             task.ResultHolder.SetException (e);
         }
@@ -118,13 +118,13 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
                 lock (Cache)
-                    task = new ReusableTask(Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
+                    task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
@@ -139,13 +139,13 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
                 lock (Cache)
-                    task = new ReusableTask(Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
+                    task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> (true));
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 

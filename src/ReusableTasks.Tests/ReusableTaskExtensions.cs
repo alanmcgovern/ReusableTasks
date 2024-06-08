@@ -1,6 +1,6 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Threading.Tasks;
+
 using NUnit.Framework;
 
 namespace ReusableTasks.Tests

@@ -151,7 +151,7 @@ namespace ReusableTasks.Tests
         public async Task Asynchronous_IsCompleted ()
         {
             var firstWaiter = new SemaphoreSlim (0, 1);
-            var secondWaiter  = new SemaphoreSlim (0, 1);
+            var secondWaiter = new SemaphoreSlim (0, 1);
 
             async ReusableTask Test ()
             {
@@ -243,24 +243,24 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public async Task FromResult_TwiceSequential()
+        public async Task FromResult_TwiceSequential ()
         {
-            var task = ReusableTask.FromResult(5);
-            Assert.AreEqual(0, ReusableTaskMethodBuilder<int>.CacheCount);
-            Assert.IsTrue(task.IsCompleted);
-            Assert.AreEqual(5, await task);
+            var task = ReusableTask.FromResult (5);
+            Assert.AreEqual (0, ReusableTaskMethodBuilder<int>.CacheCount);
+            Assert.IsTrue (task.IsCompleted);
+            Assert.AreEqual (5, await task);
 
-            Assert.AreEqual(15, await ReusableTask.FromResult(15));
+            Assert.AreEqual (15, await ReusableTask.FromResult (15));
         }
 
         [Test]
-        public async Task FromResult_TwiceConcurrent()
+        public async Task FromResult_TwiceConcurrent ()
         {
-            var task1 = ReusableTask.FromResult(4);
-            var task2 = ReusableTask.FromResult(14);
+            var task1 = ReusableTask.FromResult (4);
+            var task2 = ReusableTask.FromResult (14);
 
-            Assert.AreEqual(14, await task2);
-            Assert.AreEqual(4, await task1);
+            Assert.AreEqual (14, await task2);
+            Assert.AreEqual (4, await task1);
         }
 
         [Test]

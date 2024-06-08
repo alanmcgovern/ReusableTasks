@@ -96,10 +96,10 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <param name="e"></param>
-        public void SetException(Exception e)
+        public void SetException (Exception e)
         {
             if (task.ResultHolder == null) {
-                 lock (Cache)
+                lock (Cache)
                     task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
             }
             task.ResultHolder.SetException (e);
@@ -109,7 +109,7 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <param name="result"></param>
-        public void SetResult(T result)
+        public void SetResult (T result)
         {
             if (task.ResultHolder == null)
                 task = new ReusableTask<T> (result);
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
@@ -145,7 +145,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="awaiter"></param>
         /// <param name="stateMachine"></param>
-        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine> (ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {

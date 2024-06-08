@@ -8,35 +8,31 @@ namespace ReusableTasks
     class ActionWorkItem : IThreadPoolWorkItem
     {
         static readonly Action EmptyAction = () => { };
-        static readonly Stack<ActionWorkItem> Cache = new Stack<ActionWorkItem>();
+        static readonly Stack<ActionWorkItem> Cache = new Stack<ActionWorkItem> ();
 
         public Action Continuation { get; private set; } = EmptyAction;
 
-        public static ActionWorkItem GetOrCreate(Action action)
+        public static ActionWorkItem GetOrCreate (Action action)
         {
-            lock (Cache)
-            {
-                if (Cache.Count == 0)
-                {
+            lock (Cache) {
+                if (Cache.Count == 0) {
                     return new ActionWorkItem { Continuation = action };
-                }
-                else
-                {
-                    var worker = Cache.Pop();
+                } else {
+                    var worker = Cache.Pop ();
                     worker.Continuation = action;
                     return worker;
                 }
             }
         }
 
-        public void Execute()
+        public void Execute ()
         {
             var continuation = Continuation;
             Continuation = EmptyAction;
 
             lock (Cache)
-                Cache.Push(this);
-            continuation();
+                Cache.Push (this);
+            continuation ();
         }
     }
 #endif

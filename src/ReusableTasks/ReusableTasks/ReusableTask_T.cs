@@ -27,7 +27,6 @@
 //
 
 
-using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +41,7 @@ namespace ReusableTasks
     /// If an instance of <see cref="ReusableTask{T}"/> is awaited twice, then it will corrupt the cache and
     /// future behaviour will be indeterminate.
     /// </summary>
-    [AsyncMethodBuilder(typeof(ReusableTaskMethodBuilder<>))]
+    [AsyncMethodBuilder (typeof (ReusableTaskMethodBuilder<>))]
     public readonly struct ReusableTask<T>
     {
         internal static ResultHolder<T> SyncCompleted = ResultHolder<T>.CreateUncachedCompleted ();
@@ -66,7 +65,7 @@ namespace ReusableTasks
         }
 
         internal ReusableTask (ResultHolder<T> resultHolder, SynchronizationContext syncContext)
-            : this(resultHolder)
+            : this (resultHolder)
         {
             ResultHolder.SyncContext = syncContext;
         }
@@ -93,7 +92,7 @@ namespace ReusableTasks
         /// be invoked on the captured <see cref="System.Threading.SynchronizationContext"/>, otherwise
         /// the continuation will be executed on a <see cref="ThreadPool"/> thread.</param>
         /// <returns></returns>
-        public ReusableTask<T> ConfigureAwait(bool continueOnCapturedContext)
+        public ReusableTask<T> ConfigureAwait (bool continueOnCapturedContext)
         {
             if (continueOnCapturedContext)
                 ResultHolder.SyncContext = SynchronizationContext.Current;
@@ -106,7 +105,7 @@ namespace ReusableTasks
         /// Gets the awaiter used to await this <see cref="ReusableTask{T}"/>
         /// </summary>
         /// <returns></returns>
-        public ReusableTaskAwaiter<T> GetAwaiter()
+        public ReusableTaskAwaiter<T> GetAwaiter ()
             => new ReusableTaskAwaiter<T> (Id, this);
 
         internal void Reset ()

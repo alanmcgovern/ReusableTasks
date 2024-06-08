@@ -61,9 +61,9 @@ namespace ReusableTasks
             Queue = new Queue<T> ();
         }
 
-        void CancelDequeued() => Dequeued.TrySetCanceled();
+        void CancelDequeued () => Dequeued.TrySetCanceled ();
 
-        void CancelEnqueued() => Enqueued.TrySetCanceled();
+        void CancelEnqueued () => Enqueued.TrySetCanceled ();
 
         /// <summary>
         /// Sets <see cref="IsAddingCompleted"/> to true and interrupts any pending <see cref="DequeueAsync()"/>
@@ -84,8 +84,8 @@ namespace ReusableTasks
         /// will be added.
         /// /// </summary>
         /// <returns></returns>
-        public ReusableTask<T> DequeueAsync()
-            => DequeueAsync(CancellationToken.None);
+        public ReusableTask<T> DequeueAsync ()
+            => DequeueAsync (CancellationToken.None);
 
         /// <summary>
         /// If an item has already been enqueued, then it will be dequeued and returned synchronously. Otherwise an
@@ -102,7 +102,7 @@ namespace ReusableTasks
                         throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
                     if (Queue.Count > 0) {
-                        token.ThrowIfCancellationRequested();
+                        token.ThrowIfCancellationRequested ();
                         var result = Queue.Dequeue ();
                         if (Queue.Count == Capacity - 1)
                             Dequeued.TrySetResult (true);
@@ -110,7 +110,7 @@ namespace ReusableTasks
                     }
                 }
 
-                using (var registration = token == CancellationToken.None ? default : token.Register(CancelEnqueuedCallback))
+                using (var registration = token == CancellationToken.None ? default : token.Register (CancelEnqueuedCallback))
                     await Enqueued.Task.ConfigureAwait (false);
             }
         }
@@ -122,8 +122,8 @@ namespace ReusableTasks
         /// /// </summary>
         /// <param name="value">The item to enqueue</param>
         /// <returns></returns>
-        public ReusableTask EnqueueAsync(T value)
-            => EnqueueAsync(value, CancellationToken.None);
+        public ReusableTask EnqueueAsync (T value)
+            => EnqueueAsync (value, CancellationToken.None);
 
         /// <summary>
         /// The new item will be enqueued synchronously if the number of items already
@@ -133,7 +133,7 @@ namespace ReusableTasks
         /// <param name="value">The item to enqueue</param>
         /// <param name="token">The token used to cancel the pending enqueue.</param>
         /// <returns></returns>
-        public async ReusableTask EnqueueAsync(T value, CancellationToken token)
+        public async ReusableTask EnqueueAsync (T value, CancellationToken token)
         {
             if (IsAddingCompleted)
                 throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
@@ -141,15 +141,15 @@ namespace ReusableTasks
             while (true) {
                 lock (Queue) {
                     if (Queue.Count < Capacity || !IsBounded) {
-                        token.ThrowIfCancellationRequested();
+                        token.ThrowIfCancellationRequested ();
                         Queue.Enqueue (value);
                         if (Queue.Count == 1)
                             Enqueued.TrySetResult (true);
                         return;
                     }
                 }
-                using (var registration = token == CancellationToken.None ? default : token.Register(CancelDequeuedCallback))
-                    await Dequeued.Task.ConfigureAwait(false);
+                using (var registration = token == CancellationToken.None ? default : token.Register (CancelDequeuedCallback))
+                    await Dequeued.Task.ConfigureAwait (false);
             }
         }
     }
