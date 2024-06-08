@@ -47,6 +47,7 @@ namespace ReusableTasks
         ReusableTaskCompletionSource<bool> Dequeued { get; }
         ReusableTaskCompletionSource<bool> Enqueued { get; }
         Queue<T> Queue { get; }
+        SimpleSpinLock QueueLock { get; }
 
         /// <summary>
         /// Creates a new instance of <see cref="AsyncProducerConsumerQueue{T}"/>.
@@ -59,6 +60,7 @@ namespace ReusableTasks
             Dequeued = new ReusableTaskCompletionSource<bool> (true);
             Enqueued = new ReusableTaskCompletionSource<bool> (true);
             Queue = new Queue<T> ();
+            QueueLock = new SimpleSpinLock ();
         }
 
         void CancelDequeued () => Dequeued.TrySetCanceled ();
@@ -72,9 +74,8 @@ namespace ReusableTasks
         /// </summary>
         public void CompleteAdding ()
         {
-            lock (Queue) {
+            using (QueueLock.Enter ())
                 IsAddingCompleted = true;
-            }
             Enqueued.TrySetResult (true);
         }
 
@@ -97,7 +98,7 @@ namespace ReusableTasks
         public async ReusableTask<T> DequeueAsync (CancellationToken token)
         {
             while (true) {
-                lock (Queue) {
+                using (QueueLock.Enter ()) {
                     if (Queue.Count == 0 && IsAddingCompleted)
                         throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
@@ -139,7 +140,7 @@ namespace ReusableTasks
                 throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
             while (true) {
-                lock (Queue) {
+                using (QueueLock.Enter ()) {
                     if (Queue.Count < Capacity || !IsBounded) {
                         token.ThrowIfCancellationRequested ();
                         Queue.Enqueue (value);

@@ -1,10 +1,10 @@
 ﻿//
-// AsyncMethodBuilderAttribute.cs
+// SimpleSpinLock.cs
 //
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //
-// Copyright (C) 2019 Alan McGovern
+// Copyright (C) 2024 Alan McGovern
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,29 +26,32 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Threading;
 
-#if NETSTANDARD2_0
-
-namespace System.Runtime.CompilerServices
+namespace ReusableTasks
 {
-    /// <summary>
-    /// Not intended to be used directly.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct)]
-    public sealed class AsyncMethodBuilderAttribute : Attribute
+    class SimpleSpinLock
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        public Type BuilderType { get; }
+        SpinLock Lock = new SpinLock (false);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="type"></param>
-        public AsyncMethodBuilderAttribute (Type type)
-            => BuilderType = type;
+        public Releaser Enter ()
+        {
+            // Nothing in this library is safe after a thread abort... so let's not care too much about this.
+            bool taken = false;
+            Lock.Enter (ref taken);
+            return new Releaser (this);
+        }
+
+        public readonly struct Releaser : IDisposable
+        {
+            readonly SimpleSpinLock SimpleSpinLock;
+
+            internal Releaser (SimpleSpinLock simpleSpinLock)
+                => SimpleSpinLock = simpleSpinLock;
+
+            public void Dispose ()
+                => SimpleSpinLock?.Lock.Exit (false);
+        }
     }
 }
-
-#endif

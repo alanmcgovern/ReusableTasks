@@ -31,6 +31,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Transactions;
 
 using ReusableTasks;
 
@@ -42,6 +43,7 @@ namespace System.Runtime.CompilerServices
     public struct ReusableTaskMethodBuilder<T>
     {
         static readonly Stack<ResultHolder<T>> Cache = new Stack<ResultHolder<T>> ();
+        static readonly SimpleSpinLock CacheLock = new SimpleSpinLock ();
 
         /// <summary>
         /// The number of <see cref="ReusableTaskMethodBuilder{T}"/> instances currently in the cache.
@@ -53,7 +55,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public static void ClearCache ()
         {
-            lock (Cache)
+            using (CacheLock.Enter ())
                 Cache.Clear ();
         }
 
@@ -79,7 +81,7 @@ namespace System.Runtime.CompilerServices
             // This is always resettable, but sometimes cacheable.
             result.Reset ();
             if (result.Cacheable) {
-                lock (Cache)
+                using (CacheLock.Enter ())
                     if (Cache.Count < MaximumCacheSize)
                         Cache.Push (result);
             }
@@ -99,7 +101,7 @@ namespace System.Runtime.CompilerServices
         public void SetException (Exception e)
         {
             if (task.ResultHolder == null) {
-                lock (Cache)
+                using (CacheLock.Enter ())
                     task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
             }
             task.ResultHolder.SetException (e);
@@ -129,7 +131,7 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                lock (Cache)
+                using (CacheLock.Enter ())
                     task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
@@ -150,7 +152,7 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                lock (Cache)
+                using (CacheLock.Enter ())
                     task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }

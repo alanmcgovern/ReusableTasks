@@ -28,6 +28,7 @@
 
 
 using System.Collections.Generic;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -39,6 +40,7 @@ namespace System.Runtime.CompilerServices
     {
 #pragma warning disable RECS0108 // Warns about static fields in generic types
         static readonly Stack<StateMachineCache<TStateMachine>> Cache = new Stack<StateMachineCache<TStateMachine>> ();
+        static readonly ReusableTasks.SimpleSpinLock CacheLock = new ReusableTasks.SimpleSpinLock ();
 #pragma warning restore RECS0108 // Warns about static fields in generic types
 
         /// <summary>
@@ -51,7 +53,7 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public static StateMachineCache<TStateMachine> GetOrCreate ()
         {
-            lock (Cache)
+            using (CacheLock.Enter ())
                 return Cache.Count > 0 ? Cache.Pop () : new StateMachineCache<TStateMachine> ();
         }
 
@@ -94,7 +96,7 @@ namespace System.Runtime.CompilerServices
             var sm = StateMachine;
             StateMachine = default;
 
-            lock (Cache)
+            using (CacheLock.Enter ())
                 Cache.Push (this);
             sm.MoveNext ();
         }
