@@ -93,12 +93,13 @@ namespace System.Runtime.CompilerServices
 
         void OnCompleted ()
         {
-            var sm = StateMachine;
+            // Run the callback *before* pushing this object back into the cache.
+            // This makes things a teeny bit more responsive.
+            StateMachine.MoveNext ();
             StateMachine = default;
 
             using (CacheLock.Enter ())
                 Cache.Push (this);
-            sm.MoveNext ();
         }
     }
 }
