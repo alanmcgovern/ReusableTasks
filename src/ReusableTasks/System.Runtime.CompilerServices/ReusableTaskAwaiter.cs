@@ -43,9 +43,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => Result == null || Result.HasValue;
+        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
 
-        ResultHolder<EmptyStruct> Result { get; }
+        ResultHolder<EmptyStruct> ResultHolder { get; }
 
         /// <summary>
         /// 
@@ -55,7 +55,7 @@ namespace System.Runtime.CompilerServices
         internal ReusableTaskAwaiter (int id, ResultHolder<EmptyStruct> resultHolder)
         {
             Id = id;
-            Result = resultHolder;
+            ResultHolder = resultHolder;
         }
 
         /// <summary>
@@ -64,15 +64,15 @@ namespace System.Runtime.CompilerServices
         public void GetResult ()
         {
             // This respresents a 'ReusableTask.CompletedTask'. This is a successfully completed task with no errors.
-            if (Result == null)
+            if (ResultHolder == null)
                 return;
 
-            if (Result.Id != Id)
+            if (ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            var exception = Result.Exception;
-            if (Result.Cacheable)
-                ReusableTaskMethodBuilder.Release (Result);
+            var exception = ResultHolder.Exception;
+            if (ResultHolder.Cacheable)
+                ReusableTaskMethodBuilder.Release (ResultHolder);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();
@@ -84,10 +84,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation"></param>
         public void OnCompleted (Action continuation)
         {
-            if (Result.Id != Id)
+            if (ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            Result.Continuation = continuation;
+            ResultHolder.Continuation = continuation;
         }
     }
 }
