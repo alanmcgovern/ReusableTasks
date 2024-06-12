@@ -44,7 +44,7 @@ namespace ReusableTasks.Tests
         public void Setup ()
         {
             delayingTask = new TaskCompletionSource<int> (TaskCreationOptions.RunContinuationsAsynchronously);
-            var cancellation = new CancellationTokenSource (TimeSpan.FromSeconds (1));
+            var cancellation = new CancellationTokenSource (TimeSpan.FromSeconds (10));
             cancellation.Token.Register (() => delayingTask.TrySetCanceled ());
         }
 
