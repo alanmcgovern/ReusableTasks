@@ -52,7 +52,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="id"></param>
         /// <param name="task"></param>
-        internal ReusableTaskAwaiter (int id, ReusableTask<T> task)
+        internal ReusableTaskAwaiter (int id, in ReusableTask<T> task)
         {
             Id = id;
             Task = task;
