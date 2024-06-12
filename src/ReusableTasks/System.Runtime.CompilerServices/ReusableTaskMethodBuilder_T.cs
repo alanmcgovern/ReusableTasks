@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
         {
             if (task.ResultHolder == null) {
                 using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
+                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
             }
             task.ResultHolder.SetException (e);
         }
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
         {
             if (task.ResultHolder == null) {
                 using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
+                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
@@ -153,7 +153,7 @@ namespace System.Runtime.CompilerServices
         {
             if (task.ResultHolder == null) {
                 using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> (true));
+                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 

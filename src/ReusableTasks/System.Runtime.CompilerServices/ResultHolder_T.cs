@@ -112,8 +112,8 @@ namespace System.Runtime.CompilerServices
 
         T Value { get; set; }
 
-        public ResultHolder (bool cacheable)
-            : this (cacheable, false)
+        public ResultHolder ()
+            : this (true, false)
         {
         }
 
