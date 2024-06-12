@@ -60,11 +60,6 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// The maximum number of instances to store in the cache. Defaults to <see langword="512"/>
-        /// </summary>
-        public static int MaximumCacheSize { get; set; } = 512;
-
-        /// <summary>
         /// Not intended to be used directly. This method returns an object from the cache, or instantiates
         /// and returns a new object if the cache is empty.
         /// </summary>
@@ -82,7 +77,7 @@ namespace System.Runtime.CompilerServices
             result.Reset ();
             if (result.Cacheable) {
                 using (CacheLock.Enter ())
-                    if (Cache.Count < MaximumCacheSize)
+                    if (Cache.Count < ReusableTaskMethodBuilder.MaximumCacheSize)
                         Cache.Push (result);
             }
         }
