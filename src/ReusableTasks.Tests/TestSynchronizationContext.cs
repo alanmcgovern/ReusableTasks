@@ -50,13 +50,16 @@ namespace ReusableTasks.Tests
                 SetSynchronizationContext (this);
                 while (true) {
                     try {
-                        Callbacks.Take ().Invoke ();
+                        var task = Callbacks.Take ();
+                        task.Invoke ();
                     } catch {
                         break;
                     }
                 }
-            });
-            thread.IsBackground = true;
+            }) {
+                IsBackground = true,
+                Name = "TestSynchronizationContext Thread",
+            };
             thread.Start ();
         }
 
