@@ -106,8 +106,5 @@ namespace ReusableTasks
         /// <returns></returns>
         public ReusableTaskAwaiter GetAwaiter ()
             => new ReusableTaskAwaiter (Id, ResultHolder);
-
-        internal void Reset ()
-            => ResultHolder.Reset ();
     }
 }
