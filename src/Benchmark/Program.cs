@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 
 using ReusableTasks;
@@ -12,52 +15,49 @@ namespace MyBenchmarks
     [MemoryDiagnoser]
     public class ReusableTask_AlreadyCompleted
     {
-        int Concurrency = 1;
-        int Depth = 100;
-        int Iterations = 100;
+        [Params (1)]
+        public int Concurrency { get; set; } = 1;
+
+        [Params (500)]
+        public int Depth { get; set; } = 500;
+
+        [Params (1000)]
+        public int Iterations { get; set; } = 1000;
+
         public ReusableTask_AlreadyCompleted ()
         {
+            ReusableTaskMethodBuilder.MaximumCacheSize = Depth * 4;
         }
 
         [Benchmark]
-        public void ReusableTask_1000Deep ()
+        public async Task ReusableTask ()
         {
-            async Task Async_SyncCompletion_Looper ()
+            static async ReusableTask AsyncCompletion (int count)
             {
-                async ReusableTask<int> AsyncCompletion (int count, TaskCompletionSource<int> tcs)
-                {
-                    if (count == 0) {
-                        await Task.Yield ();
-                        return await tcs.Task;
-                    }
-                    return await AsyncCompletion (count - 1, tcs);
-                }
-
-                for (int i = 0; i < Iterations; i++) {
-                    var tcs = new TaskCompletionSource<int> ();
-                    var task = AsyncCompletion (Depth, tcs);
-                    tcs.SetResult (10);
-                    await task;
+                if (count == 0) {
+                    await Task.Yield ();
+                } else {
+                    await AsyncCompletion (count - 1).ConfigureAwait (false);
                 }
             }
 
-            Task.WhenAll (Enumerable.Range (0, Concurrency)
-                .Select (t => Task.Run (Async_SyncCompletion_Looper)))
-                .Wait ();
+            for (int i = 0; i < Iterations; i++)
+                await AsyncCompletion (Depth).ConfigureAwait (false);
         }
 
         [Benchmark]
-        public void ValueTask_1000Deep ()
+        public void ReusableTaskInt ()
         {
             async Task Async_SyncCompletion_Looper ()
             {
-                async ValueTask<int> AsyncCompletion (int count)
+                async ReusableTask<int> AsyncCompletion (int count)
                 {
                     if (count == 0) {
                         await Task.Yield ();
                         return 10;
+                    } else {
+                        return await AsyncCompletion (count - 1);
                     }
-                    return await AsyncCompletion (count - 1);
                 }
 
                 for (int i = 0; i < Iterations; i++)
@@ -69,27 +69,47 @@ namespace MyBenchmarks
                 .Wait ();
         }
 
+        [Benchmark]
+        public void ValueTaskInt ()
+        {
+            async Task Async_SyncCompletion_Looper ()
+            {
+                async ValueTask<int> AsyncCompletion (int count)
+                {
+                    if (count == 0) {
+                        await Task.Yield ();
+                        return 10;
+                    } else {
+                        return await AsyncCompletion (count - 1);
+                    }
+                }
+
+                for (int i = 0; i < Iterations; i++)
+                    await AsyncCompletion (Depth);
+            }
+
+            Task.WhenAll (Enumerable.Range (0, Concurrency)
+                .Select (t => Task.Run (Async_SyncCompletion_Looper)))
+                .Wait ();
+        }
     }
 
     public class Program
     {
         public static void Main (string[] args)
         {
-            //RunTest();
-            var summary = BenchmarkRunner.Run (typeof (ReusableTask_AlreadyCompleted));
+            //RunTest ().Wait ();
+            //var summary = BenchmarkRunner.Run (typeof (ReusableTask_AlreadyCompleted).Assembly, new DebugInProcessConfig());
+            var summary = BenchmarkRunner.Run (typeof (ReusableTask_AlreadyCompleted).Assembly);
         }
 
-        static void RunTest ()
+        static async Task RunTest ()
         {
-            var bench = new ReusableTask_AlreadyCompleted ();
-            for (int i = 0; i < 0; i++)
-                bench.ReusableTask_1000Deep ();
-            Console.WriteLine ("10");
-            //return;
-            for (int i = 0; i < 100; i++)
-                bench.ReusableTask_1000Deep ();
-            Console.WriteLine ("100");
-            Console.ReadLine ();
+            ReusableTask_AlreadyCompleted a = new ReusableTask_AlreadyCompleted ();
+            for (int i = 0; i < 10000; i++) {
+                a.ReusableTask ();
+                await Task.Yield ();
+            }
         }
     }
 }
