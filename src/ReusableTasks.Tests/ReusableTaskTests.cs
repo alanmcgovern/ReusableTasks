@@ -221,6 +221,22 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
+        public async Task Asynchronous_ValidateFastPath ()
+        {
+            // Validate the optimisation where ReusableTaskAwaiter fast-paths to ResultHolder
+            async ReusableTask Test (int count)
+            {
+                await Task.Yield ();
+                if (count > 0)
+                    await Test (count - 1);
+            }
+
+            await Test (5);
+
+            Assert.AreEqual (6, ReusableTaskMethodBuilder.CacheCount, "#1");
+        }
+
+        [Test]
         public async Task CompletedTask ()
         {
             await ReusableTask.CompletedTask;
