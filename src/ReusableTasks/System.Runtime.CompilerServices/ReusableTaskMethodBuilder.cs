@@ -39,22 +39,16 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public struct ReusableTaskMethodBuilder
     {
-        static readonly Stack<ResultHolder<EmptyStruct>> Cache = new Stack<ResultHolder<EmptyStruct>> ();
-        static readonly SimpleSpinLock CacheLock = new SimpleSpinLock ();
-
         /// <summary>
         /// The number of <see cref="ReusableTaskMethodBuilder"/> instances currently in the cache.
         /// </summary>
-        public static int CacheCount => Cache.Count;
+        public static int CacheCount => ReusableTaskMethodBuilder<EmptyStruct>.CacheCount;
 
         /// <summary>
         /// Removes all <see cref="ReusableTaskMethodBuilder"/> instances from the cache.
         /// </summary>
         public static void ClearCache ()
-        {
-            using (CacheLock.Enter ())
-                Cache.Clear ();
-        }
+            => ReusableTaskMethodBuilder<EmptyStruct>.ClearCache ();
 
         /// <summary>
         /// The maximum number of instances to store in the cache. Defaults to <see langword="512"/>
@@ -62,8 +56,7 @@ namespace System.Runtime.CompilerServices
         public static int MaximumCacheSize { get; set; } = 512;
 
         /// <summary>
-        /// Not intended to be used directly. This method returns an object from the cache, or instantiates
-        /// and returns a new object if the cache is empty.
+        /// Not intended to be used directly.
         /// </summary>
         /// <returns></returns>
         public static ReusableTaskMethodBuilder Create ()
@@ -74,13 +67,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="result">The instance to place in the cache</param>
         internal static void Release (ResultHolder<EmptyStruct> result)
-        {
-            // This is neither cachable or resettable.
-            result.Reset ();
-            using (CacheLock.Enter ())
-                if (Cache.Count < MaximumCacheSize)
-                    Cache.Push (result);
-        }
+            => ReusableTaskMethodBuilder<EmptyStruct>.Release (result);
 
         ReusableTask task;
 
@@ -96,8 +83,7 @@ namespace System.Runtime.CompilerServices
         public void SetException (Exception e)
         {
             if (task.ResultHolder == null)
-                using (CacheLock.Enter ())
-                    task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> ());
+                task = new ReusableTask (ReusableTaskMethodBuilder<EmptyStruct>.GetOrCreate ());
             task.ResultHolder.SetException (e);
         }
 
@@ -109,7 +95,7 @@ namespace System.Runtime.CompilerServices
             if (task.ResultHolder == null)
                 task = ReusableTask.CompletedTask;
             else
-                task.ResultHolder.SetResult (new EmptyStruct ());
+                task.ResultHolder.SetResult (default);
         }
 
         /// <summary>
@@ -124,13 +110,11 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                using (CacheLock.Enter ())
-                    task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> ());
+                task = new ReusableTask (ReusableTaskMethodBuilder<EmptyStruct>.GetOrCreate ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
         /// <summary>
@@ -145,13 +129,11 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                using (CacheLock.Enter ())
-                    task = new ReusableTask (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<EmptyStruct> ());
+                task = new ReusableTask (ReusableTaskMethodBuilder<EmptyStruct>.GetOrCreate ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
 
         /// <summary>

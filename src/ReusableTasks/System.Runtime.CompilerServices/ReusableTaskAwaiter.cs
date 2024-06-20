@@ -36,16 +36,16 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public readonly struct ReusableTaskAwaiter : INotifyCompletion
+    public readonly struct ReusableTaskAwaiter : INotifyCompletion, IReusableTaskAwaiter
     {
+        internal readonly ResultHolder<EmptyStruct> ResultHolder;
         readonly int Id;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
+        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
 
-        ResultHolder<EmptyStruct> ResultHolder { get; }
 
         /// <summary>
         /// 

@@ -44,16 +44,18 @@ namespace ReusableTasks
     [AsyncMethodBuilder (typeof (ReusableTaskMethodBuilder<>))]
     public readonly struct ReusableTask<T>
     {
+        // The order of these fields needs to match the declaration order in `ReusableTask<T>`.
+        // Both structs are cast using `Unsafe.As<From, To>` so the fields need to match so 'ResultHolder'
+        // can be safely accessed
+        internal readonly ResultHolder<T> ResultHolder;
+        readonly int Id;
+        readonly T Result;
+
+
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
         public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
-
-        readonly int Id;
-
-        internal readonly ResultHolder<T> ResultHolder;
-
-        internal readonly T Result;
 
         internal ReusableTask (ResultHolder<T> resultHolder)
         {
@@ -106,6 +108,6 @@ namespace ReusableTasks
         /// </summary>
         /// <returns></returns>
         public ReusableTaskAwaiter<T> GetAwaiter ()
-            => new ReusableTaskAwaiter<T> (Id, in this);
+            => new ReusableTaskAwaiter<T> (Id, ResultHolder, in Result);
     }
 }

@@ -59,14 +59,16 @@ namespace ReusableTasks
         public static ReusableTask<T> FromResult<T> (T result)
             => new ReusableTask<T> (result);
 
+        // The order of these fields needs to match the declaration order in `ReusableTask<T>`.
+        // Both structs are cast using `Unsafe.As<From, To>` so the fields need to match so 'ResultHolder'
+        // can be safely accessed
+        internal readonly ResultHolder<EmptyStruct> ResultHolder;
         readonly int Id;
 
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
-        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
-
-        internal readonly ResultHolder<EmptyStruct> ResultHolder;
+        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
 
         internal ReusableTask (ResultHolder<EmptyStruct> resultHolder)
         {
