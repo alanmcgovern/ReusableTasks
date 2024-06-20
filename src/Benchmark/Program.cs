@@ -15,7 +15,7 @@ namespace MyBenchmarks
     [MemoryDiagnoser]
     public class ReusableTask_AlreadyCompleted
     {
-        [Params (1)]
+        [Params (1, 4)]
         public int Concurrency { get; set; } = 1;
 
         [Params (500)]
@@ -56,12 +56,12 @@ namespace MyBenchmarks
                         await Task.Yield ();
                         return 10;
                     } else {
-                        return await AsyncCompletion (count - 1);
+                        return await AsyncCompletion (count - 1).ConfigureAwait (false);
                     }
                 }
 
                 for (int i = 0; i < Iterations; i++)
-                    await AsyncCompletion (Depth);
+                    await AsyncCompletion (Depth).ConfigureAwait (false);
             }
 
             Task.WhenAll (Enumerable.Range (0, Concurrency)
@@ -80,12 +80,12 @@ namespace MyBenchmarks
                         await Task.Yield ();
                         return 10;
                     } else {
-                        return await AsyncCompletion (count - 1);
+                        return await AsyncCompletion (count - 1).ConfigureAwait (false);
                     }
                 }
 
                 for (int i = 0; i < Iterations; i++)
-                    await AsyncCompletion (Depth);
+                    await AsyncCompletion (Depth).ConfigureAwait (false);
             }
 
             Task.WhenAll (Enumerable.Range (0, Concurrency)
