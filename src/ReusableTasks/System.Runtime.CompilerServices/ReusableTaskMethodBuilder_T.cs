@@ -31,7 +31,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Transactions;
 
 using ReusableTasks;
 
@@ -67,6 +66,12 @@ namespace System.Runtime.CompilerServices
         public static ReusableTaskMethodBuilder<T> Create ()
             => new ReusableTaskMethodBuilder<T> ();
 
+        internal static ResultHolder<T> GetOrCreate ()
+        {
+            using (CacheLock.Enter ())
+                return Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ();
+        }
+
         /// <summary>
         /// Places the instance into the cache for re-use. This is invoked implicitly when a <see cref="ReusableTask{T}"/> is awaited.
         /// </summary>
@@ -95,10 +100,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="e"></param>
         public void SetException (Exception e)
         {
-            if (task.ResultHolder == null) {
-                using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
-            }
+            if (task.ResultHolder == null)
+                task = new ReusableTask<T> (GetOrCreate ());
             task.ResultHolder.SetException (e);
         }
 
@@ -126,13 +129,11 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
+                task = new ReusableTask<T> (GetOrCreate ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
         /// <summary>
@@ -147,13 +148,11 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             if (task.ResultHolder == null) {
-                using (CacheLock.Enter ())
-                    task = new ReusableTask<T> (Cache.Count > 0 ? Cache.Pop () : new ResultHolder<T> ());
+                task = new ReusableTask<T> (GetOrCreate ());
                 task.ResultHolder.SyncContext = SynchronizationContext.Current;
             }
 
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
 
         /// <summary>

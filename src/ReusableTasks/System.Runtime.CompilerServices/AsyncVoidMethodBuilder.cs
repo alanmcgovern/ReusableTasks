@@ -88,8 +88,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitOnCompleted (ref awaiter, ref stateMachine);
         }
 
         /// <summary>
@@ -103,8 +102,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            StateMachineCache<TStateMachine>.GetOrCreate ()
-                .AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
+            ReusableTaskMethodBuilderCore.AwaitUnsafeOnCompleted (ref awaiter, ref stateMachine);
         }
     }
 }

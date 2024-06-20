@@ -36,26 +36,28 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    public readonly struct ReusableTaskAwaiter<T> : INotifyCompletion
+    public readonly struct ReusableTaskAwaiter<T> : INotifyCompletion, IReusableTaskAwaiter
     {
+        internal readonly ResultHolder<T> ResultHolder;
         readonly int Id;
-
-        readonly ReusableTask<T> Task;
+        readonly T Result;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => Task.IsCompleted;
+        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="id"></param>
-        /// <param name="task"></param>
-        internal ReusableTaskAwaiter (int id, in ReusableTask<T> task)
+        /// <param name="resultHolder"></param>
+        /// <param name="result"></param>
+        internal ReusableTaskAwaiter (int id, ResultHolder<T> resultHolder, in T result)
         {
             Id = id;
-            Task = task;
+            ResultHolder = resultHolder;
+            Result = result;
         }
 
         /// <summary>
@@ -64,17 +66,16 @@ namespace System.Runtime.CompilerServices
         /// <returns></returns>
         public T GetResult ()
         {
-            var holder = Task.ResultHolder;
             // Represents a successfully completed task no data.
-            if (holder == null)
-                return Task.Result; // This is either the value passed into `ReusableTask.FromResult` or it's default(T) because someone just did `await new ReusableTask<T> ()`.
+            if (ResultHolder == null)
+                return Result;
 
-            if (holder.Id != Id)
+            if (ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            var result = holder.GetResult ();
-            var exception = holder.Exception;
-            ReusableTaskMethodBuilder<T>.Release (holder);
+            var result = ResultHolder.GetResult ();
+            var exception = ResultHolder.Exception;
+            ReusableTaskMethodBuilder<T>.Release (ResultHolder);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();
@@ -87,10 +88,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation"></param>
         public void OnCompleted (Action continuation)
         {
-            if (Task.ResultHolder.Id != Id)
+            if (ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
-            Task.ResultHolder.Continuation = continuation;
+            ResultHolder.Continuation = continuation;
         }
     }
 }

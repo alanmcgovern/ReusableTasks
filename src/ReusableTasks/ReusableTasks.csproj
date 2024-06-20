@@ -19,6 +19,10 @@
     <PackDependsOn>$(PackDependsOn)</PackDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" Condition="$(TargetFramework) == 'netstandard2.0' Or $(TargetFramework) == 'netstandard2.1' "  />
+  </ItemGroup>
+
   <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' != 'true' Or '$(Configuration)' == 'Debug' ">
     <PropertyGroup>
       <Version>0.0.0.1</Version>

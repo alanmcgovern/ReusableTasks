@@ -28,45 +28,40 @@
 
 
 using System.Collections.Generic;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
     /// Not intended to be used directly.
     /// </summary>
-    abstract class StateMachineCache
-    {
-        internal virtual void OnCompleted ()
-        {
-        }
-    }
-
-    /// <summary>
-    /// Not intended to be used directly.
-    /// </summary>
-    sealed class StateMachineCache<TStateMachine> : StateMachineCache
+    public class StateMachineWithActionCache<TStateMachine>
         where TStateMachine : IAsyncStateMachine
     {
 #pragma warning disable RECS0108 // Warns about static fields in generic types
-        static readonly Stack<StateMachineCache<TStateMachine>> Cache = new Stack<StateMachineCache<TStateMachine>> ();
+        static readonly Stack<StateMachineWithActionCache<TStateMachine>> Cache = new Stack<StateMachineWithActionCache<TStateMachine>> ();
         static readonly ReusableTasks.SimpleSpinLock CacheLock = new ReusableTasks.SimpleSpinLock ();
 #pragma warning restore RECS0108 // Warns about static fields in generic types
 
         /// <summary>
-        /// Retrieves an instance of <see cref="StateMachineCache{TStateMachine}"/> from the cache. If the cache is
-        /// empty, a new instance will be created and returned. You must invoke either <see cref="SetStateMachine(ref TStateMachine)"/> or
-        /// <see cref="SetStateMachine(ref TStateMachine)"/>. This will ensure the
-        /// <see cref="StateMachineCache{TStateMachine}"/> instance is added back into the cache as soon as the
+        /// Retrieves an instance of <see cref="StateMachineWithActionCache{TStateMachine}"/> from the cache. If the cache is
+        /// <see cref="StateMachineWithActionCache{TStateMachine}"/> instance is added back into the cache as soon as the
         /// async continuation has been executed.
         /// </summary>
         /// <returns></returns>
-        public static StateMachineCache<TStateMachine> GetOrCreate ()
+        public static StateMachineWithActionCache<TStateMachine> GetOrCreate ()
         {
             using (CacheLock.Enter ())
-                return Cache.Count > 0 ? Cache.Pop () : new StateMachineCache<TStateMachine> ();
+                return Cache.Count > 0 ? Cache.Pop () : new StateMachineWithActionCache<TStateMachine> ();
         }
 
+        internal readonly Action Callback;
         TStateMachine StateMachine;
+
+        StateMachineWithActionCache ()
+        {
+            Callback = OnCompleted;
+        }
 
         /// <summary>
         /// 
@@ -77,7 +72,7 @@ namespace System.Runtime.CompilerServices
             StateMachine = stateMachine;
         }
 
-        internal override void OnCompleted ()
+        void OnCompleted ()
         {
             // Run the callback *before* pushing this object back into the cache.
             // This makes things a teeny bit more responsive.

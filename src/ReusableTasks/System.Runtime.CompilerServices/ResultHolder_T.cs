@@ -27,6 +27,7 @@
 //
 
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,34 +37,39 @@ namespace System.Runtime.CompilerServices
 {
     class ResultHolder
     {
-        protected static readonly SendOrPostCallback InvokeOnContext = state => ((Action) state).Invoke ();
-        protected static readonly WaitCallback InvokeOnThreadPool = state => ((Action) state).Invoke ();
-
-        protected static Action HasValueSentinel = () => { throw new InvalidTaskReuseException ("HasValueSentinel - Should not be invoked."); };
-    }
-
-    /// <summary>
-    /// Not intended to be used directly.
-    /// </summary>
-    class ResultHolder<T> : ResultHolder
-    {
-        const int CacheableFlag = 1 << 29;
-        const int ForceAsynchronousContinuationFlag = 1 << 30;
-        const int SettingValueFlag = 1 << 31;
+        protected const int CacheableFlag = 1 << 29;
+        protected const int ForceAsynchronousContinuationFlag = 1 << 30;
+        protected const int SettingValueFlag = 1 << 31;
         // The top 3 bits are reserved for various flags, the rest is used for the unique ID.
-        const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | SettingValueFlag);
+        protected const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | SettingValueFlag);
         // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
-        const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
+        protected const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
-
-        Action continuation;
-        int state;
-
-        public bool Cacheable {
-            get => (state & CacheableFlag) == CacheableFlag;
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        internal static void Invoker (object state)
+        {
+            Debug.Assert (state is Action || state is StateMachineCache);
+            if (state is Action action)
+                action.Invoke ();
+            else
+                Unsafe.As<StateMachineCache> (state).OnCompleted ();
         }
 
-        public Action Continuation {
+        // This is a string purely to aid debugging. it's obvious when this value is set
+        protected static object HasValueSentinel = "has_value_sentinal";
+
+        protected static readonly SendOrPostCallback InvokeOnContext = Invoker;
+        protected static readonly WaitCallback InvokeOnThreadPool = Invoker;
+
+        protected object continuation;
+        public SynchronizationContext SyncContext;
+        protected int state;
+
+
+        public bool Cacheable
+            => (state & CacheableFlag) == CacheableFlag;
+
+        public object Continuation {
             get => continuation;
             set {
                 // If 'continuation' is set to 'null' then we have not yet set a value. In this
@@ -84,17 +90,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public Exception Exception { get; private set; }
-
-        /// <summary>
-        /// The compiler/runtime uses this to check whether or not the awaitable can
-        /// be completed synchronously or asynchronously. If this property is checked
-        /// and 'false' is returned, then 'INotifyCompletion.OnCompleted' will be invoked
-        /// with the delegate we need to asynchronously invoke. If it returns true then
-        /// the compiler/runtime will go ahead and invoke the continuation itself.
-        /// </summary>
-        public bool HasValue
-            => continuation == HasValueSentinel;
+        public Exception Exception {
+            get; protected set;
+        }
 
         public bool ForceAsynchronousContinuation {
             get => (state & ForceAsynchronousContinuationFlag) == ForceAsynchronousContinuationFlag;
@@ -106,10 +104,43 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// The compiler/runtime uses this to check whether or not the awaitable can
+        /// be completed synchronously or asynchronously. If this property is checked
+        /// and 'false' is returned, then 'INotifyCompletion.OnCompleted' will be invoked
+        /// with the delegate we need to asynchronously invoke. If it returns true then
+        /// the compiler/runtime will go ahead and invoke the continuation itself.
+        /// </summary>
+        public bool HasValue
+            => continuation == HasValueSentinel;
+
         public int Id => state & IdMask;
 
-        public SynchronizationContext SyncContext;
+        protected void TryInvoke (object callback)
+        {
+            // If we are supposed to execute on the captured sync context, use it. Otherwise
+            // we should ensure the continuation executes on the threadpool. If the user has
+            // created a dedicated thread (or whatever) we do not want to be executing on it.
+            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
+                Invoker (callback);
+            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
+                Invoker (callback);
+            else if (SyncContext != null)
+                SyncContext.Post (InvokeOnContext, callback);
+            else
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1
+                ThreadPool.UnsafeQueueUserWorkItem (ActionWorkItem.GetOrCreate (callback), false);
+#else
+                ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
+#endif
+        }
+    }
 
+    /// <summary>
+    /// Not intended to be used directly.
+    /// </summary>
+    class ResultHolder<T> : ResultHolder
+    {
         T Value { get; set; }
 
         public ResultHolder ()
@@ -179,32 +210,13 @@ namespace System.Runtime.CompilerServices
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.
-            var action = Interlocked.CompareExchange (ref continuation, HasValueSentinel, null);
-            if (action != null) {
+            var continuation = Interlocked.CompareExchange (ref base.continuation, HasValueSentinel, null);
+            if (continuation != null) {
                 // This means the value returned by the CompareExchange was the continuation passed by the
                 // compiler, so we can directly execute it now that we have set a value.
-                TryInvoke (action);
+                TryInvoke (continuation);
             }
             return true;
-        }
-
-        void TryInvoke (Action callback)
-        {
-            // If we are supposed to execute on the captured sync context, use it. Otherwise
-            // we should ensure the continuation executes on the threadpool. If the user has
-            // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
-                callback ();
-            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
-                callback ();
-            else if (SyncContext != null)
-                SyncContext.Post (InvokeOnContext, callback);
-            else
-#if NET5_0_OR_GREATER || NETCOREAPP3_0_OR_GREATER
-                ThreadPool.UnsafeQueueUserWorkItem (ActionWorkItem.GetOrCreate (callback), false);
-#else
-                ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
-#endif
         }
     }
 }
