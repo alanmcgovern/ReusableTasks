@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;netcoreapp3.0</TargetFrameworks>
-    <DebugType>embedded</DebugType>
+    <DebugType>portable</DebugType>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" Condition="$(TargetFramework) == 'netstandard2.0' Or $(TargetFramework) == 'netstandard2.1' "  />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" Condition="$(TargetFramework) == 'netstandard2.0' Or $(TargetFramework) == 'netstandard2.1'" />
   </ItemGroup>
 
   <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' != 'true' Or '$(Configuration)' == 'Debug' ">
