@@ -120,15 +120,22 @@ namespace System.Runtime.CompilerServices
 
         protected void TryInvoke (object callback)
         {
+            var ctx = SyncContext;
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (SyncContext == null && Thread.CurrentThread.IsThreadPoolThread && !ForceAsynchronousContinuation)
-                Invoker (callback);
-            else if (SyncContext != null && SynchronizationContext.Current == SyncContext && !ForceAsynchronousContinuation)
-                Invoker (callback);
-            else if (SyncContext != null)
-                SyncContext.Post (InvokeOnContext, callback);
+            if (!ForceAsynchronousContinuation) {
+                if (ctx == null && Thread.CurrentThread.IsThreadPoolThread) {
+                    Invoker (callback);
+                    return;
+                } else if (ctx != null && SynchronizationContext.Current == ctx) {
+                    Invoker (callback);
+                    return;
+                }
+            }
+
+            if (ctx != null)
+                ctx.Post (InvokeOnContext, callback);
             else
 #if !NETSTANDARD2_0 && !NETSTANDARD2_1
                 ThreadPool.UnsafeQueueUserWorkItem (ActionWorkItem.GetOrCreate (callback), false);
