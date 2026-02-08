@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // This is a string purely to aid debugging. it's obvious when this value is set
-        protected static object HasValueSentinel = "has_value_sentinal";
+        protected static readonly object HasValueSentinel = "has_value_sentinal";
 
         protected static readonly SendOrPostCallback InvokeOnContext = Invoker;
         protected static readonly WaitCallback InvokeOnThreadPool = Invoker;
@@ -78,11 +78,13 @@ namespace System.Runtime.CompilerServices
                 var sentinel = HasValueSentinel;
                 var action = Interlocked.CompareExchange (ref continuation, value, null);
                 if (action == sentinel) {
+#if DEBUG
                     // A non-null action means that the 'HasValueSentinel' was set on the field.
                     // This indicates a value has already been set, so we can execute the
                     // compiler-supplied continuation immediately.
                     if (Interlocked.CompareExchange (ref continuation, value, sentinel) != sentinel)
                         throw new InvalidTaskReuseException ("A mismatch was detected when attempting to invoke the continuation. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
+#endif
                     TryInvoke (value);
                 } else if (action != null) {
                     throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
@@ -112,7 +114,7 @@ namespace System.Runtime.CompilerServices
         /// the compiler/runtime will go ahead and invoke the continuation itself.
         /// </summary>
         public bool HasValue
-            => continuation == HasValueSentinel;
+            => Volatile.Read (ref continuation) == HasValueSentinel;
 
         public int Id => state & IdMask;
 
@@ -159,13 +161,13 @@ namespace System.Runtime.CompilerServices
 
         public void Reset ()
         {
-            continuation = null;
             Exception = null;
             SyncContext = null;
             Value = default;
 
             var retained = state & RetainedFlags;
-            Interlocked.Exchange (ref state, ((state + 1) & IdMask) | retained);
+            state = ((state + 1) & IdMask) | retained;
+            Volatile.Write (ref continuation, null);
         }
 
         public void SetCanceled ()
@@ -210,7 +212,7 @@ namespace System.Runtime.CompilerServices
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.
-            var continuation = Interlocked.CompareExchange (ref base.continuation, HasValueSentinel, null);
+            var continuation = Volatile.Read (ref base.continuation) ?? Interlocked.CompareExchange (ref base.continuation, HasValueSentinel, null);
             if (continuation != null) {
                 // This means the value returned by the CompareExchange was the continuation passed by the
                 // compiler, so we can directly execute it now that we have set a value.
