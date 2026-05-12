@@ -35,7 +35,10 @@ using ReusableTasks;
 
 namespace System.Runtime.CompilerServices
 {
-    class ResultHolder
+    class ResultHolder<T>
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1
+        : IThreadPoolWorkItem
+#endif
     {
         protected const int CacheableFlag = 1 << 29;
         protected const int ForceAsynchronousContinuationFlag = 1 << 30;
@@ -136,12 +139,17 @@ namespace System.Runtime.CompilerServices
 
             if (ctx != null)
                 ctx.Post (InvokeOnContext, callback);
-            else
+            else {
 #if !NETSTANDARD2_0 && !NETSTANDARD2_1
-                ThreadPool.UnsafeQueueUserWorkItem (ActionWorkItem.GetOrCreate (callback), false);
+                // This may still have the value 'HasValueSentinel' if the value was set for the task
+                // before the continuation was set. In this case we store the callback in the continuation
+                // field and then enqueue the execution in the threadpool.
+                continuation = callback;
+                ThreadPool.UnsafeQueueUserWorkItem (this, true);
 #else
                 ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
 #endif
+            }
         }
     }
 
@@ -227,5 +235,12 @@ namespace System.Runtime.CompilerServices
             }
             return true;
         }
+
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1
+        void IThreadPoolWorkItem.Execute ()
+        {
+            Invoker (continuation);
+        }
+#endif
     }
 }
