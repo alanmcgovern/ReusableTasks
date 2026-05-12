@@ -97,22 +97,30 @@ namespace ReusableTasks
         /// <returns></returns>
         public async ReusableTask<T> DequeueAsync (CancellationToken token)
         {
-            while (true) {
-                using (QueueLock.Enter ()) {
-                    if (Queue.Count == 0 && IsAddingCompleted)
+            if (TryDequeue (QueueLock, Queue, IsAddingCompleted, Capacity, Dequeued, token, out var result))
+                return result;
+
+            using var registration = token == CancellationToken.None ? default : token.Register (CancelEnqueuedCallback);
+            while (!TryDequeue (QueueLock, Queue, IsAddingCompleted, Capacity, Dequeued, token, out result))
+                await Enqueued.Task.ConfigureAwait (false);
+            return result;
+
+            static bool TryDequeue (SimpleSpinLock queueLock, Queue<T> queue, bool isAddingCompleted, int capacity, ReusableTaskCompletionSource<bool> dequeued, CancellationToken token, out T result)
+            {
+                using (queueLock.Enter ()) {
+                    token.ThrowIfCancellationRequested ();
+                    if (queue.Count == 0 && isAddingCompleted)
                         throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
-                    if (Queue.Count > 0) {
-                        token.ThrowIfCancellationRequested ();
-                        var result = Queue.Dequeue ();
-                        if (Queue.Count == Capacity - 1)
-                            Dequeued.TrySetResult (true);
-                        return result;
+                    if (queue.Count > 0) {
+                        result = queue.Dequeue ();
+                        if (queue.Count == capacity - 1)
+                            dequeued.TrySetResult (true);
+                        return true;
                     }
                 }
-
-                using (var registration = token == CancellationToken.None ? default : token.Register (CancelEnqueuedCallback))
-                    await Enqueued.Task.ConfigureAwait (false);
+                result = default;
+                return false;
             }
         }
 
@@ -139,18 +147,26 @@ namespace ReusableTasks
             if (IsAddingCompleted)
                 throw new InvalidOperationException ("This queue has been marked as complete, so no further items can be added.");
 
-            while (true) {
-                using (QueueLock.Enter ()) {
-                    if (Queue.Count < Capacity || !IsBounded) {
-                        token.ThrowIfCancellationRequested ();
-                        Queue.Enqueue (value);
-                        if (Queue.Count == 1)
-                            Enqueued.TrySetResult (true);
-                        return;
+            if (TryEnqueue (QueueLock, Queue, in value, Capacity, IsBounded, Enqueued, token))
+                return;
+
+            using var registration = token == CancellationToken.None ? default : token.Register (CancelDequeuedCallback);
+            while (!TryEnqueue (QueueLock, Queue, in value, Capacity, IsBounded, Enqueued, token))
+                await Dequeued.Task.ConfigureAwait (false);
+
+            static bool TryEnqueue (SimpleSpinLock queueLock, Queue<T> queue, in T value, int capacity, bool isBounded, ReusableTaskCompletionSource<bool> enqueued, CancellationToken token)
+            {
+                using (queueLock.Enter ()) {
+                    token.ThrowIfCancellationRequested ();
+
+                    if (queue.Count < capacity || !isBounded) {
+                        queue.Enqueue (value);
+                        if (queue.Count == 1)
+                            enqueued.TrySetResult (true);
+                        return true;
                     }
                 }
-                using (var registration = token == CancellationToken.None ? default : token.Register (CancelDequeuedCallback))
-                    await Dequeued.Task.ConfigureAwait (false);
+                return false;
             }
         }
     }

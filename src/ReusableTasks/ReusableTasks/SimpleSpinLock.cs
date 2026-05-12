@@ -43,7 +43,7 @@ namespace ReusableTasks
             return new Releaser (this);
         }
 
-        public readonly struct Releaser : IDisposable
+        public readonly ref struct Releaser
         {
             readonly SimpleSpinLock SimpleSpinLock;
 
