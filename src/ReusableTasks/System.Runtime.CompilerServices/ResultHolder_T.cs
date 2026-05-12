@@ -42,9 +42,8 @@ namespace System.Runtime.CompilerServices
     {
         protected const int CacheableFlag = 1 << 29;
         protected const int ForceAsynchronousContinuationFlag = 1 << 30;
-        protected const int SettingValueFlag = 1 << 31;
         // The top 3 bits are reserved for various flags, the rest is used for the unique ID.
-        protected const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag | SettingValueFlag);
+        protected const int IdMask = ~(CacheableFlag | ForceAsynchronousContinuationFlag);
         // When resetting the instance we want to retain the 'Cacheable' and 'ForceAsync' flags.
         protected const int RetainedFlags = CacheableFlag | ForceAsynchronousContinuationFlag;
 
@@ -65,15 +64,15 @@ namespace System.Runtime.CompilerServices
         protected static readonly WaitCallback InvokeOnThreadPool = Invoker;
 
         protected object continuation;
-        public SynchronizationContext SyncContext;
-        protected int state;
+        // Volatile: set on one thread (the awaiter), read on another (TryInvoke).
+        public volatile SynchronizationContext SyncContext;
+        protected volatile int state;
 
 
         public bool Cacheable
             => (state & CacheableFlag) == CacheableFlag;
 
         public object Continuation {
-            get => continuation;
             set {
                 // If 'continuation' is set to 'null' then we have not yet set a value. In this
                 // scenario we should place the compiler-supplied continuation in the field so
@@ -81,13 +80,6 @@ namespace System.Runtime.CompilerServices
                 var sentinel = HasValueSentinel;
                 var action = Interlocked.CompareExchange (ref continuation, value, null);
                 if (action == sentinel) {
-#if DEBUG
-                    // A non-null action means that the 'HasValueSentinel' was set on the field.
-                    // This indicates a value has already been set, so we can execute the
-                    // compiler-supplied continuation immediately.
-                    if (Interlocked.CompareExchange (ref continuation, value, sentinel) != sentinel)
-                        throw new InvalidTaskReuseException ("A mismatch was detected when attempting to invoke the continuation. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
-#endif
                     TryInvoke (value);
                 } else if (action != null) {
                     throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
@@ -151,14 +143,8 @@ namespace System.Runtime.CompilerServices
 #endif
             }
         }
-    }
 
-    /// <summary>
-    /// Not intended to be used directly.
-    /// </summary>
-    class ResultHolder<T> : ResultHolder
-    {
-        T Value { get; set; }
+        T value;
 
         public ResultHolder ()
             : this (true, false)
@@ -172,62 +158,50 @@ namespace System.Runtime.CompilerServices
         }
 
         public T GetResult ()
-            => Value;
+            => value;
 
         public void Reset ()
         {
             Exception = null;
             SyncContext = null;
-            Value = default;
-
-            var retained = state & RetainedFlags;
-            state = ((state + 1) & IdMask) | retained;
+            value = default;
+            state = ((state + 1) & IdMask) | (state & RetainedFlags);
             Volatile.Write (ref continuation, null);
         }
 
         public void SetCanceled ()
         {
-            if (!TrySetCanceled ())
+            if (!TrySetExceptionOrResult (new OperationCanceledException(), default))
                 throw new InvalidOperationException ("A result has already been set on this object");
         }
 
         public void SetException (Exception exception)
         {
-            if (!TrySetException (exception))
+            if (!TrySetExceptionOrResult (exception, default))
                 throw new InvalidOperationException ("A result has already been set on this object");
         }
 
         public void SetResult (T result)
         {
-            if (!TrySetResult (result))
+            if (!TrySetExceptionOrResult (null, result))
                 throw new InvalidOperationException ("A result has already been set on this object");
         }
 
-        public bool TrySetCanceled ()
-            => TrySetExceptionOrResult (new TaskCanceledException (), default);
-
-        public bool TrySetException (Exception exception)
-            => TrySetExceptionOrResult (exception, default);
-
-        public bool TrySetResult (T result)
-            => TrySetExceptionOrResult (null, result);
-
-        bool TrySetExceptionOrResult (Exception exception, T result)
+        bool TrySetExceptionOrResult (Exception exception, in T result)
         {
-            var originalState = state;
-            if ((originalState & SettingValueFlag) == SettingValueFlag)
+            var continuation = Volatile.Read (ref this.continuation);
+            if (continuation == HasValueSentinel)
                 return false;
 
-            if (Interlocked.CompareExchange (ref state, originalState | SettingValueFlag, originalState) != originalState)
-                return false;
-
-            // Set the exception/value and update the state
+            // Plain stores for Exception and Value are safe here: the subsequent CAS
+            // on 'continuation' is a full fence, guaranteeing these writes are visible
             Exception = exception;
-            Value = result;
+            value = result;
 
             // If 'continuation' is set to 'null' then we have not yet set a continuation.
             // In this scenario, set the continuation to a value signifying the result is now available.
-            var continuation = Volatile.Read (ref base.continuation) ?? Interlocked.CompareExchange (ref base.continuation, HasValueSentinel, null);
+            continuation ??= Interlocked.CompareExchange (ref this.continuation, HasValueSentinel, null);
+
             if (continuation != null) {
                 // This means the value returned by the CompareExchange was the continuation passed by the
                 // compiler, so we can directly execute it now that we have set a value.

@@ -86,29 +86,5 @@ namespace ReusableTasks
         /// </summary>
         public void SetResult (T result)
             => Result.SetResult (result);
-
-        /// <summary>
-        /// Returns true if the underlying task is successfully marked as canceled. Returns false
-        /// if the underlying task has already completed.
-        /// </summary>
-        /// <returns></returns>
-        internal bool TrySetCanceled ()
-            => Result.TrySetCanceled ();
-
-        /// <summary>
-        /// Returns true if the underlying task is successfully marked as faulted. Returns false
-        /// if the underlying task has already completed.
-        /// </summary>
-        /// <returns></returns>
-        internal bool TrySetException (Exception exception)
-            => Result.TrySetException (exception);
-
-        /// <summary>
-        /// Returns true if the underlying task is successfully marked as completed. Returns false
-        /// if the underlying task has already completed.
-        /// </summary>
-        /// <returns></returns>
-        internal bool TrySetResult (T result)
-            => Result.TrySetResult (result);
     }
 }
