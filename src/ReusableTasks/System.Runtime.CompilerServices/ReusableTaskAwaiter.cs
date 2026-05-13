@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
+        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
 
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices
 
             var exception = ResultHolder.Exception;
             if (ResultHolder.Cacheable)
-                ReusableTaskMethodBuilder.Release (ResultHolder);
+                ReusableTaskMethodBuilder<EmptyStruct>.Release (ResultHolder);
 
             if (exception != null)
                 ExceptionDispatchInfo.Capture (exception).Throw ();

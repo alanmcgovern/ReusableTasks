@@ -92,7 +92,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public ReusableTask<T> Task => task;
+        public readonly ReusableTask<T> Task => task;
 
         /// <summary>
         /// 
@@ -160,7 +160,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="stateMachine"></param>
-        public void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
+        public readonly void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
             stateMachine.MoveNext ();
         }
@@ -169,7 +169,7 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <param name="stateMachine"></param>
-        public void SetStateMachine (IAsyncStateMachine stateMachine)
+        public readonly void SetStateMachine (IAsyncStateMachine stateMachine)
         {
         }
     }

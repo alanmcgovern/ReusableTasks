@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// 
         /// </summary>
-        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
+        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
 
         /// <summary>
         /// 

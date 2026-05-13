@@ -55,7 +55,7 @@ namespace ReusableTasks
         /// <summary>
         /// Returns true if the task has completed.
         /// </summary>
-        public bool IsCompleted => ResultHolder == null || (ResultHolder.HasValue && !ResultHolder.ForceAsynchronousContinuation);
+        public bool IsCompleted => ResultHolder == null || ResultHolder.HasValue;
 
         internal ReusableTask (ResultHolder<T> resultHolder)
         {

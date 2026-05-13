@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices
         protected object continuation;
         // Volatile: set on one thread (the awaiter), read on another (TryInvoke).
         public volatile SynchronizationContext SyncContext;
-        protected volatile int state;
+        protected int state;
 
 
         public bool Cacheable
@@ -77,10 +77,10 @@ namespace System.Runtime.CompilerServices
                 // If 'continuation' is set to 'null' then we have not yet set a value. In this
                 // scenario we should place the compiler-supplied continuation in the field so
                 // that when a value is set we can directly invoke the continuation.
-                var sentinel = HasValueSentinel;
                 var action = Interlocked.CompareExchange (ref continuation, value, null);
-                if (action == sentinel) {
-                    TryInvoke (value);
+                if (action == HasValueSentinel) {
+                    Volatile.Write (ref continuation, value);
+                    TryInvoke ();
                 } else if (action != null) {
                     throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
                 }
@@ -91,16 +91,6 @@ namespace System.Runtime.CompilerServices
             get; protected set;
         }
 
-        public bool ForceAsynchronousContinuation {
-            get => (state & ForceAsynchronousContinuationFlag) == ForceAsynchronousContinuationFlag;
-            set {
-                if (value)
-                    state |= ForceAsynchronousContinuationFlag;
-                else
-                    state &= ~ForceAsynchronousContinuationFlag;
-            }
-        }
-
         /// <summary>
         /// The compiler/runtime uses this to check whether or not the awaitable can
         /// be completed synchronously or asynchronously. If this property is checked
@@ -109,37 +99,37 @@ namespace System.Runtime.CompilerServices
         /// the compiler/runtime will go ahead and invoke the continuation itself.
         /// </summary>
         public bool HasValue
-            => Volatile.Read (ref continuation) == HasValueSentinel;
+            => (state & ForceAsynchronousContinuationFlag) != ForceAsynchronousContinuationFlag
+            && Volatile.Read(ref continuation) == HasValueSentinel;
 
         public int Id => state & IdMask;
 
-        protected void TryInvoke (object callback)
+        protected void TryInvoke ()
         {
             var ctx = SyncContext;
             // If we are supposed to execute on the captured sync context, use it. Otherwise
             // we should ensure the continuation executes on the threadpool. If the user has
             // created a dedicated thread (or whatever) we do not want to be executing on it.
-            if (!ForceAsynchronousContinuation) {
+            if ((state & ForceAsynchronousContinuationFlag) != ForceAsynchronousContinuationFlag) {
                 if (ctx == null && Thread.CurrentThread.IsThreadPoolThread) {
-                    Invoker (callback);
+                    Invoker (continuation);
                     return;
                 } else if (ctx != null && SynchronizationContext.Current == ctx) {
-                    Invoker (callback);
+                    Invoker (continuation);
                     return;
                 }
             }
 
             if (ctx != null)
-                ctx.Post (InvokeOnContext, callback);
+                ctx.Post (InvokeOnContext, continuation);
             else {
 #if !NETSTANDARD2_0 && !NETSTANDARD2_1
                 // This may still have the value 'HasValueSentinel' if the value was set for the task
                 // before the continuation was set. In this case we store the callback in the continuation
                 // field and then enqueue the execution in the threadpool.
-                continuation = callback;
                 ThreadPool.UnsafeQueueUserWorkItem (this, true);
 #else
-                ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, callback);
+                ThreadPool.UnsafeQueueUserWorkItem (InvokeOnThreadPool, continuation);
 #endif
             }
         }
@@ -154,7 +144,7 @@ namespace System.Runtime.CompilerServices
         public ResultHolder (bool cacheable, bool forceAsynchronousContinuation)
         {
             state |= cacheable ? CacheableFlag : 0;
-            ForceAsynchronousContinuation = forceAsynchronousContinuation;
+            state |= forceAsynchronousContinuation ? ForceAsynchronousContinuationFlag : 0;
         }
 
         public T GetResult ()
@@ -205,7 +195,7 @@ namespace System.Runtime.CompilerServices
             if (continuation != null) {
                 // This means the value returned by the CompareExchange was the continuation passed by the
                 // compiler, so we can directly execute it now that we have set a value.
-                TryInvoke (continuation);
+                TryInvoke ();
             }
             return true;
         }

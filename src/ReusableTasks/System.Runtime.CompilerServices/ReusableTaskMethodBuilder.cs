@@ -62,19 +62,12 @@ namespace System.Runtime.CompilerServices
         public static ReusableTaskMethodBuilder Create ()
             => new ReusableTaskMethodBuilder ();
 
-        /// <summary>
-        /// Places the instance into the cache for re-use. This is invoked implicitly when a <see cref="ReusableTask"/> is awaited.
-        /// </summary>
-        /// <param name="result">The instance to place in the cache</param>
-        internal static void Release (ResultHolder<EmptyStruct> result)
-            => ReusableTaskMethodBuilder<EmptyStruct>.Release (result);
-
         ReusableTask task;
 
         /// <summary>
         /// 
         /// </summary>
-        public ReusableTask Task => task;
+        public readonly ReusableTask Task => task;
 
         /// <summary>
         /// 
@@ -141,7 +134,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TStateMachine"></typeparam>
         /// <param name="stateMachine"></param>
-        public void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
+        public readonly void Start<TStateMachine> (ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
             stateMachine.MoveNext ();
         }
@@ -150,7 +143,7 @@ namespace System.Runtime.CompilerServices
         /// 
         /// </summary>
         /// <param name="stateMachine"></param>
-        public void SetStateMachine (IAsyncStateMachine stateMachine)
+        public readonly void SetStateMachine (IAsyncStateMachine stateMachine)
         {
         }
     }
