@@ -30,6 +30,7 @@
 #pragma warning disable IDE0062 // Make local function 'static'
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,7 +75,7 @@ namespace ReusableTasks.Tests
         }
 
         [Test]
-        public void Asynchronous_AwaiterGetResultTwice ()
+        public async Task Asynchronous_AwaiterGetResultTwice ()
         {
             async ReusableTask Test ()
             {
@@ -82,6 +83,9 @@ namespace ReusableTasks.Tests
             }
 
             var task = Test ();
+            while (!task.IsCompleted)
+                await Task.Yield ();
+
             var awaiter = task.GetAwaiter ();
             awaiter.GetResult ();
             Assert.Throws<InvalidTaskReuseException> (() => awaiter.GetResult (), "#1");
@@ -280,6 +284,38 @@ namespace ReusableTasks.Tests
 
             Assert.AreEqual (14, await task2);
             Assert.AreEqual (4, await task1);
+        }
+
+        struct CorruptMe
+        {
+
+        }
+
+        [Test]
+        public async Task GetAwaiter_GetResultWhileRunning ()
+        {
+            SemaphoreSlim waiter = new SemaphoreSlim (0, 1);
+            async ReusableTask Corruption ()
+            {
+                await waiter.WaitAsync ();
+            }
+
+            // Start a task.
+            var result = Corruption ();
+
+            // Try get the result immediately, which should return the object to the pool
+            Assert.Throws<InvalidOperationException> (() => result.GetAwaiter ().GetResult ());
+
+            // Start a second task which will pop that resultholder from the pool.
+            var result2 = Corruption ();
+
+            // Let them both complete.
+            waiter.Release ();
+            while (waiter.CurrentCount > 0)
+                await Task.Yield ();
+
+            await Task.Delay (1000);
+            waiter.Release ();
         }
 
         [Test]

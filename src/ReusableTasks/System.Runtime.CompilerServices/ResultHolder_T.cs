@@ -100,7 +100,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public bool HasValue
             => (state & ForceAsynchronousContinuationFlag) != ForceAsynchronousContinuationFlag
-            && Volatile.Read(ref continuation) == HasValueSentinel;
+            && Volatile.Read (ref continuation) == HasValueSentinel;
 
         public int Id => state & IdMask;
 
@@ -148,8 +148,11 @@ namespace System.Runtime.CompilerServices
         }
 
         public T GetResult ()
-            => value;
-
+        {
+            if (Volatile.Read (ref continuation) == null)
+                throw new InvalidOperationException ("Cannot call GetResult on a ResultHolder until after the result has been set. Don't call 'GetAwaiter().GetResult() on an incomplete ReusableTask");
+            return value;
+        }
         public void Reset ()
         {
             Exception = null;

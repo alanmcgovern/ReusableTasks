@@ -70,7 +70,11 @@ namespace System.Runtime.CompilerServices
             if (ResultHolder.Id != Id)
                 throw new InvalidTaskReuseException ("A mismatch was detected between the ResuableTask and its Result source. This typically means the ReusableTask was awaited twice concurrently. If you need to do this, convert the ReusableTask to a Task before awaiting.");
 
+            // Always call GetResult to verify no-one is calling GetAwaiter().GetResult() synchronously
+            // on an incomplete task.
+            ResultHolder.GetResult ();
             var exception = ResultHolder.Exception;
+            ResultHolder.Reset ();
             if (ResultHolder.Cacheable)
                 ReusableTaskMethodBuilder<EmptyStruct>.Release (ResultHolder);
 
